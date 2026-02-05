@@ -3,18 +3,19 @@ import { formatDate, capitalize, debounce } from "@/utils";
 describe("Utils", () => {
   describe("formatDate", () => {
     it("should format a date correctly", () => {
-      const date = new Date("2024-01-15");
+      // Use local date constructor to avoid timezone flakiness (UTC "2024-01-15" can become Jan 14 in some zones)
+      const date = new Date(2024, 0, 15);
       const formatted = formatDate(date);
       expect(formatted).toBe("January 15, 2024");
     });
 
     it("should handle end-of-year date", () => {
-      const date = new Date("2023-12-31");
+      const date = new Date(2023, 11, 31);
       expect(formatDate(date)).toBe("December 31, 2023");
     });
 
     it("should use en-US long style", () => {
-      const date = new Date("2025-07-04");
+      const date = new Date(2025, 6, 4);
       expect(formatDate(date)).toMatch(/July 4, 2025/);
     });
   });
@@ -41,6 +42,10 @@ describe("Utils", () => {
   describe("debounce", () => {
     beforeEach(() => {
       jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
     });
 
     it("should debounce function calls", () => {

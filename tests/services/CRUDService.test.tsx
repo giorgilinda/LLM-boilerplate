@@ -10,6 +10,28 @@ interface MockEntity extends CrudEntity {
   name: string;
 }
 
+// jsdom does not provide fetch/Response, and undici needs TextDecoder (missing in jsdom). Use a minimal mock.
+beforeAll(() => {
+  const g = global as unknown as { fetch?: typeof fetch; Response?: typeof Response };
+  if (typeof g.Response === "undefined") {
+    class MockResponse {
+      ok: boolean;
+      body: string;
+      constructor(body: string, init?: { status?: number; headers?: Record<string, string> }) {
+        this.body = body;
+        this.ok = (init?.status ?? 200) >= 200 && (init?.status ?? 200) < 300;
+      }
+      async json() {
+        return JSON.parse(this.body);
+      }
+    }
+    g.Response = MockResponse as unknown as typeof Response;
+  }
+  if (typeof g.fetch === "undefined") {
+    g.fetch = jest.fn();
+  }
+});
+
 function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -25,6 +47,10 @@ function createWrapper() {
 }
 
 describe("createCrudService", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   describe("return shape and query keys", () => {
     it("returns queryKeys and all hook factories", () => {
       const service = createCrudService<MockEntity>({
@@ -168,7 +194,7 @@ describe("createCrudService", () => {
         listFromResponse: (body) => (body as { results: MockEntity[] }).results,
       });
 
-      jest.spyOn(global, "fetch").mockResolvedValue(
+      const fetchSpy = jest.spyOn(global, "fetch").mockResolvedValue(
         new Response(
           JSON.stringify({ results: [{ id: 1, name: "Unwrapped" }] }),
           { status: 200, headers: { "Content-Type": "application/json" } }
@@ -183,6 +209,7 @@ describe("createCrudService", () => {
       });
 
       expect(result.current.data).toEqual([{ id: 1, name: "Unwrapped" }]);
+      fetchSpy.mockRestore();
     });
   });
 });
