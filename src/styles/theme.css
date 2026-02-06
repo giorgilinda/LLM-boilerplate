@@ -7,35 +7,60 @@
  * Simply update the values in the :root section below!
  */
 
-:root {
+ :root {
+  --light-percentage: 0.5;
+  --dark-percentage: 1.5;
+
   /* Primary Colors */
   --color-primary: #0070f3;
-  --color-primary-light: #3291ff;
-  --color-primary-dark: #0051cc;
+  --color-primary-light: oklch(
+    from var(--color-primary) l c h / var(--light-percentage)
+  );
+  --color-primary-dark: oklch(
+    from var(--color-primary) l c h / var(--dark-percentage)
+  );
 
   /* Secondary Colors */
   --color-secondary: #7c3aed;
-  --color-secondary-light: #8b5cf6;
-  --color-secondary-dark: #6d28d9;
+  --color-secondary-light: oklch(
+    from var(--color-secondary) l c h / var(--light-percentage)
+  );
+  --color-secondary-dark: oklch(
+    from var(--color-secondary) l c h / var(--dark-percentage)
+  );
 
   /* Accent Colors */
   --color-accent: #f59e0b;
-  --color-accent-light: #fbbf24;
-  --color-accent-dark: #d97706;
+  --color-accent-light: oklch(
+    from var(--color-accent) l c h / var(--light-percentage)
+  );
+  --color-accent-dark: oklch(
+    from var(--color-accent) l c h / var(--dark-percentage)
+  );
 
   /* Success/Positive */
   --color-success: #10b981;
-  --color-success-light: #34d399;
-  --color-success-dark: #059669;
+  --color-success-light: oklch(
+    from var(--color-success) l c h / var(--light-percentage)
+  );
+  --color-success-dark: oklch(
+    from var(--color-success) l c h / var(--dark-percentage)
+  );
 
   /* Warning/Alert */
   --color-warning: #f59e0b;
-  --color-warning-light: #fbbf24;
-  --color-warning-dark: #d97706;
+  --color-warning-light: oklch(
+    from var(--color-warning) l c h / var(--light-percentage)
+  );
+  --color-warning-dark: oklch(
+    from var(--color-warning) l c h / var(--dark-percentage)
+  );
 
   /* Error/Danger */
   --color-error: #ef4444;
-  --color-error-light: #f87171;
+  --color-error-light: oklch(
+    from var(--color-error) l c h / var(--light-percentage)
+  );
 
   /* Neutral Colors */
   --color-background: #ffffff;
@@ -113,7 +138,9 @@
     --color-background-alt: #1f2937;
     --color-surface: #1f2937;
     --color-border: #374151;
-    --color-border-light: #4b5563;
+    --color-border-light: oklch(
+      from var(--color-border) l c h / var(--light-percentage)
+    );
     --color-text-primary: #f9fafb;
     --color-text-secondary: #d1d5db;
     --color-text-tertiary: #9ca3af;
