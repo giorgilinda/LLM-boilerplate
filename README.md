@@ -151,6 +151,8 @@ TanStack Query handles all server state - data fetching, caching, and synchroniz
 
 The CRUD service (`src/services/CRUDService.ts`) exports a **generic `createCrudService<T>()` factory**. Create services for any entity by calling the factory. List responses can be plain arrays, unwrapped via `listFromResponse`, or list-plus-metadata via `parseListResponse` (see JSDoc in CRUDService.ts). Optional third generic `ListParams` types query params for the list endpoint; pass an object to `useGetList(params)` for server-side filtering (e.g. `useGetList({ status: "alive" })`).
 
+For server-side logic (route handlers, server components), the same CRUD HTTP logic is available as **pure async functions** in `src/services/crudLogic.ts` (no React Query hooks).
+
 ```typescript
 import { createCrudService, type CrudEntity } from "@/services/CRUDService";
 
@@ -169,6 +171,17 @@ const { useGetList, useGetItem, useCreate, useUpdate, useDelete } = userService;
 const { data: users } = useGetList();  // optional: useGetList({ role: "admin" }) when using ListParams
 const { mutate: createUser } = useCreate();
 createUser({ name: "Jane", email: "jane@example.com" });  // id omitted
+```
+
+Example server-side usage (pure functions):
+
+```typescript
+import { fetchList } from "@/services/crudLogic";
+
+const users = await fetchList(
+  { entityKey: "users", baseUrl: "/api/users" },
+  { status: "active" }
+);
 ```
 
 All hooks support optimistic updates for create and delete. See in-code examples in `CRUDService.ts` for list-only, `listFromResponse`, and list-plus-metadata patterns.

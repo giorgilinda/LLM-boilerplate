@@ -5,46 +5,29 @@ import {
   type QueryKey,
 } from "@tanstack/react-query";
 
+import {
+  createItem,
+  deleteItem,
+  fetchItem,
+  fetchList,
+  updateItem,
+} from "./crudLogic";
+import type {
+  CrudEntity,
+  CrudServiceConfig,
+  ListData,
+  ListResponse,
+} from "./crudLogic";
+
 // --- GENERIC CRUD SERVICE ---
 
-/** Entity shape required by the CRUD service. Must have a numeric `id`. */
-export interface CrudEntity {
-  id: number;
-}
-
-/**
- * Generic list response: list plus any extra fields from the API.
- * Use with parseListResponse when the API returns list + metadata (pagination, links, etc.).
- * Mutations only update the `list` property and preserve all other fields.
- */
-export type ListResponse<T, M = Record<string, never>> = { list: T[] } & M;
-
-/**
- * Convenience type for APIs that return { list, info }.
- * Same as ListResponse<T, { info: I }>.
- */
-export type ListWithInfo<T, I> = ListResponse<T, { info: I }>;
-
-/** Configuration for creating a CRUD service. */
-export interface CrudServiceConfig<T extends CrudEntity, ListMeta = undefined> {
-  /** Query key segment (e.g. "posts", "users"). Used for cache keys. */
-  entityKey: string;
-  /** Base API URL (e.g. "https://api.example.com/posts" or "/api/posts"). */
-  baseUrl: string;
-  /** Optional: custom error message when fetch fails. */
-  notFoundMessage?: string;
-  /**
-   * Optional: return only the list when the API wraps it (e.g. { results: T[] }).
-   * Hook returns T[]; simplest when you don't need other response fields.
-   */
-  listFromResponse?: (body: unknown) => T[];
-  /**
-   * Optional: return list + any metadata. Your parser returns { list: T[], ...meta }.
-   * Hook returns that object; mutations preserve meta and only update list.
-   * Use createCrudService<T, ListMeta> to type the extra fields.
-   */
-  parseListResponse?: (body: unknown) => ListResponse<T, ListMeta>;
-}
+export type {
+  CrudEntity,
+  CrudServiceConfig,
+  ListData,
+  ListResponse,
+  ListWithInfo,
+} from "./crudLogic";
 
 /** Query key factory returned by createCrudService. */
 export interface CrudQueryKeys<ListParams = void> {
@@ -53,9 +36,6 @@ export interface CrudQueryKeys<ListParams = void> {
   details: () => readonly [string, string];
   detail: (id: number) => readonly [string, string, number];
 }
-
-/** List data: T[] when no parser or listFromResponse, or { list, ...meta } when parseListResponse. */
-export type ListData<T, M> = M extends undefined ? T[] : ListResponse<T, M>;
 
 /** Return type of createCrudService. */
 export interface CrudServiceResult<
@@ -110,9 +90,6 @@ export function createCrudService<
 ): CrudServiceResult<T, ListMeta, ListParams> {
   const {
     entityKey,
-    baseUrl,
-    notFoundMessage = "Not found",
-    listFromResponse,
     parseListResponse,
   } = config;
 
@@ -128,28 +105,13 @@ export function createCrudService<
     detail: (id: number) => [...queryKeys.details(), id] as const,
   };
 
-  function buildListUrl(params?: ListParams): string {
-    if (params == null || typeof params !== "object") return baseUrl;
-    const url = new URL(baseUrl);
-    Object.entries(params as Record<string, unknown>).forEach(
-      ([k, v]) => v != null && v !== "" && url.searchParams.set(k, String(v))
-    );
-    return url.toString();
-  }
-
   const useGetList = (
     params?: ListParams
   ): ReturnType<CrudServiceResult<T, ListMeta, ListParams>["useGetList"]> =>
     useQuery({
       queryKey: queryKeys.lists(params),
       queryFn: async (): Promise<ListData<T, ListMeta>> => {
-        const url = buildListUrl(params);
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`Failed to fetch ${entityKey}`);
-        const body = await res.json();
-        if (parseListResponse) return parseListResponse(body) as ListData<T, ListMeta>;
-        if (listFromResponse) return listFromResponse(body) as ListData<T, ListMeta>;
-        return body as T[] as ListData<T, ListMeta>;
+        return fetchList<T, ListMeta, ListParams>(config, params);
       },
     }) as ReturnType<CrudServiceResult<T, ListMeta, ListParams>["useGetList"]>;
 
@@ -157,9 +119,7 @@ export function createCrudService<
     useQuery({
       queryKey: queryKeys.detail(id),
       queryFn: async (): Promise<T> => {
-        const res = await fetch(`${baseUrl}/${id}`);
-        if (!res.ok) throw new Error(notFoundMessage);
-        return res.json();
+        return fetchItem<T, ListMeta>(config, id);
       },
       enabled: !!id,
     });
@@ -168,12 +128,7 @@ export function createCrudService<
     const queryClient = useQueryClient();
     return useMutation({
       mutationFn: async (newItem: Omit<T, "id">) => {
-        const res = await fetch(baseUrl, {
-          method: "POST",
-          body: JSON.stringify(newItem),
-          headers: { "Content-type": "application/json" },
-        });
-        return res.json();
+        return createItem<T, ListMeta>(config, newItem);
       },
       onMutate: async (newItem) => {
         await queryClient.cancelQueries({ queryKey: queryKeys.lists() });
@@ -212,12 +167,7 @@ export function createCrudService<
     const queryClient = useQueryClient();
     return useMutation({
       mutationFn: async (updatedItem: T) => {
-        const res = await fetch(`${baseUrl}/${updatedItem.id}`, {
-          method: "PATCH",
-          body: JSON.stringify(updatedItem),
-          headers: { "Content-type": "application/json" },
-        });
-        return res.json();
+        return updateItem<T, ListMeta>(config, updatedItem);
       },
       onSuccess: (data: T) => {
         queryClient.setQueryData(queryKeys.detail(data.id), data);
@@ -230,7 +180,7 @@ export function createCrudService<
     const queryClient = useQueryClient();
     return useMutation({
       mutationFn: async (id: number) => {
-        await fetch(`${baseUrl}/${id}`, { method: "DELETE" });
+        await deleteItem<T, ListMeta>(config, id);
         return id;
       },
       onMutate: async (id) => {
