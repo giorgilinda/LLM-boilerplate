@@ -11,13 +11,13 @@ import {
   fetchItem,
   fetchList,
   updateItem,
-} from "./crudLogic";
+} from "./CRUDLogic";
 import type {
   CrudEntity,
   CrudServiceConfig,
   ListData,
   ListResponse,
-} from "./crudLogic";
+} from "./CRUDLogic";
 
 // --- GENERIC CRUD SERVICE ---
 
@@ -27,7 +27,7 @@ export type {
   ListData,
   ListResponse,
   ListWithInfo,
-} from "./crudLogic";
+} from "./CRUDLogic";
 
 /** Query key factory returned by createCrudService. */
 export interface CrudQueryKeys<ListParams = void> {
@@ -41,7 +41,7 @@ export interface CrudQueryKeys<ListParams = void> {
 export interface CrudServiceResult<
   T extends CrudEntity,
   ListMeta = undefined,
-  ListParams = void,
+  ListParams = void
 > {
   queryKeys: CrudQueryKeys<ListParams>;
   useGetList: (
@@ -84,14 +84,11 @@ export interface CrudServiceResult<
 export function createCrudService<
   T extends CrudEntity,
   ListMeta = undefined,
-  ListParams = void,
+  ListParams = void
 >(
   config: CrudServiceConfig<T, ListMeta>
 ): CrudServiceResult<T, ListMeta, ListParams> {
-  const {
-    entityKey,
-    parseListResponse,
-  } = config;
+  const { entityKey, parseListResponse } = config;
 
   const hasListMeta = !!parseListResponse;
 
@@ -139,12 +136,14 @@ export function createCrudService<
           { queryKey: queryKeys.lists() },
           (old) => {
             const isListResponse =
-              hasListMeta && old != null && typeof old === "object" && "list" in old;
-            const arr = isListResponse ? (old as ListResponse<T, ListMeta>).list : (old ?? []) as T[];
-            const nextList = [
-              { ...newItem, id: Date.now() } as T,
-              ...arr,
-            ];
+              hasListMeta &&
+              old != null &&
+              typeof old === "object" &&
+              "list" in old;
+            const arr = isListResponse
+              ? (old as ListResponse<T, ListMeta>).list
+              : ((old ?? []) as T[]);
+            const nextList = [{ ...newItem, id: Date.now() } as T, ...arr];
             return isListResponse
               ? { ...(old as ListResponse<T, ListMeta>), list: nextList }
               : nextList;
@@ -192,8 +191,13 @@ export function createCrudService<
           { queryKey: queryKeys.lists() },
           (old) => {
             const isListResponse =
-              hasListMeta && old != null && typeof old === "object" && "list" in old;
-            const arr = isListResponse ? (old as ListResponse<T, ListMeta>).list : (old ?? []) as T[];
+              hasListMeta &&
+              old != null &&
+              typeof old === "object" &&
+              "list" in old;
+            const arr = isListResponse
+              ? (old as ListResponse<T, ListMeta>).list
+              : ((old ?? []) as T[]);
             const nextList = arr.filter((item) => item.id !== id);
             return isListResponse
               ? { ...(old as ListResponse<T, ListMeta>), list: nextList }
