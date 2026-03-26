@@ -11,10 +11,13 @@ import {
   fetchItem,
   fetchList,
   updateItem,
+  isSameKey,
 } from "./CRUDLogic";
 import type {
   CrudEntity,
   CrudServiceConfig,
+  CreatePayload,
+  EntityForId,
   ListData,
   ListResponse,
 } from "./CRUDLogic";
@@ -23,34 +26,38 @@ import type {
 
 export type {
   CrudEntity,
+  CreatePayload,
   CrudServiceConfig,
+  EntityForId,
   ListData,
   ListResponse,
   ListWithInfo,
 } from "./CRUDLogic";
+export { isSameKey } from "./CRUDLogic";
 
-/** Query key factory returned by createCrudService. */
-export interface CrudQueryKeys<ListParams = void> {
+/** Query key factory returned by createCrudService. Default Id = number. */
+export interface CrudQueryKeys<ListParams = void, Id = number> {
   all: readonly [string];
   lists: (params?: ListParams) => readonly unknown[];
   details: () => readonly [string, string];
-  detail: (id: number) => readonly [string, string, number];
+  detail: (id: Id) => readonly unknown[];
 }
 
-/** Return type of createCrudService. */
+/** Return type of createCrudService. Default Id = number (single id). */
 export interface CrudServiceResult<
-  T extends CrudEntity,
+  T extends EntityForId<Id>,
   ListMeta = undefined,
-  ListParams = void
+  ListParams = void,
+  Id = number,
 > {
-  queryKeys: CrudQueryKeys<ListParams>;
+  queryKeys: CrudQueryKeys<ListParams, Id>;
   useGetList: (
     params?: ListParams
   ) => ReturnType<typeof useQuery<ListData<T, ListMeta>>>;
-  useGetItem: (id: number) => ReturnType<typeof useQuery<T>>;
-  useCreate: () => ReturnType<typeof useMutation<T, Error, Omit<T, "id">>>;
+  useGetItem: (id: Id) => ReturnType<typeof useQuery<T>>;
+  useCreate: () => ReturnType<typeof useMutation<T, Error, CreatePayload<T, Id>>>;
   useUpdate: () => ReturnType<typeof useMutation<T, Error, T>>;
-  useDelete: () => ReturnType<typeof useMutation<number, Error, number>>;
+  useDelete: () => ReturnType<typeof useMutation<Id, Error, Id>>;
 }
 
 /**
@@ -80,52 +87,60 @@ export interface CrudServiceResult<
  * @example Server-side list params (third generic)
  * createCrudService<Character, CharListMeta, { status?: string; species?: string }>({ ... })
  * useGetList({ status: "alive", species: "Human" })  // GET /api/character?status=alive&species=Human
+ *
+ * @example Composite key (fourth generic Id + getItemUrl + getKeyFromEntity)
+ * createCrudService<MemberItem, undefined, void, { memberId: number; key: string }>({ getItemUrl, getKeyFromEntity, ... })
  */
 export function createCrudService<
-  T extends CrudEntity,
+  T extends EntityForId<Id>,
   ListMeta = undefined,
-  ListParams = void
+  ListParams = void,
+  Id = number,
 >(
-  config: CrudServiceConfig<T, ListMeta>
-): CrudServiceResult<T, ListMeta, ListParams> {
-  const { entityKey, parseListResponse } = config;
+  config: CrudServiceConfig<T, ListMeta, Id>
+): CrudServiceResult<T, ListMeta, ListParams, Id> {
+  const { entityKey, parseListResponse, getKeyFromEntity } = config;
 
   const hasListMeta = !!parseListResponse;
+  const hasCompositeKey = !!getKeyFromEntity;
 
-  const queryKeys: CrudQueryKeys<ListParams> = {
+  const queryKeys: CrudQueryKeys<ListParams, Id> = {
     all: [entityKey] as const,
     lists: (params?: ListParams) =>
       (params != null
         ? ([...queryKeys.all, "list", params] as const)
         : ([...queryKeys.all, "list"] as const)) as readonly unknown[],
     details: () => [...queryKeys.all, "detail"] as const,
-    detail: (id: number) => [...queryKeys.details(), id] as const,
+    detail: (id: Id) => [...queryKeys.details(), id] as const,
   };
+
+  const resolveDetailKey = (data: T): Id =>
+    hasCompositeKey && getKeyFromEntity ? getKeyFromEntity(data) : (data as { id: number }).id as Id;
 
   const useGetList = (
     params?: ListParams
-  ): ReturnType<CrudServiceResult<T, ListMeta, ListParams>["useGetList"]> =>
+  ): ReturnType<CrudServiceResult<T, ListMeta, ListParams, Id>["useGetList"]> =>
     useQuery({
       queryKey: queryKeys.lists(params),
       queryFn: async (): Promise<ListData<T, ListMeta>> => {
-        return fetchList<T, ListMeta, ListParams>(config, params);
+        return fetchList<T, ListMeta, ListParams, Id>(config, params);
       },
-    }) as ReturnType<CrudServiceResult<T, ListMeta, ListParams>["useGetList"]>;
+    }) as ReturnType<CrudServiceResult<T, ListMeta, ListParams, Id>["useGetList"]>;
 
-  const useGetItem = (id: number) =>
+  const useGetItem = (id: Id) =>
     useQuery({
       queryKey: queryKeys.detail(id),
       queryFn: async (): Promise<T> => {
-        return fetchItem<T, ListMeta>(config, id);
+        return fetchItem<T, ListMeta, Id>(config, id);
       },
-      enabled: !!id,
+      enabled: hasCompositeKey ? id != null : !!(id as number),
     });
 
   const useCreate = () => {
     const queryClient = useQueryClient();
     return useMutation({
-      mutationFn: async (newItem: Omit<T, "id">) => {
-        return createItem<T, ListMeta>(config, newItem);
+      mutationFn: async (newItem: CreatePayload<T, Id>) => {
+        return createItem<T, ListMeta, Id>(config, newItem);
       },
       onMutate: async (newItem) => {
         await queryClient.cancelQueries({ queryKey: queryKeys.lists() });
@@ -143,7 +158,10 @@ export function createCrudService<
             const arr = isListResponse
               ? (old as ListResponse<T, ListMeta>).list
               : ((old ?? []) as T[]);
-            const nextList = [{ ...newItem, id: Date.now() } as T, ...arr];
+            const nextItem = hasCompositeKey
+              ? (newItem as T)
+              : ({ ...newItem, id: Date.now() } as T);
+            const nextList = [nextItem, ...arr];
             return isListResponse
               ? { ...(old as ListResponse<T, ListMeta>), list: nextList }
               : nextList;
@@ -166,10 +184,10 @@ export function createCrudService<
     const queryClient = useQueryClient();
     return useMutation({
       mutationFn: async (updatedItem: T) => {
-        return updateItem<T, ListMeta>(config, updatedItem);
+        return updateItem<T, ListMeta, Id>(config, updatedItem);
       },
       onSuccess: (data: T) => {
-        queryClient.setQueryData(queryKeys.detail(data.id), data);
+        queryClient.setQueryData(queryKeys.detail(resolveDetailKey(data)), data);
         queryClient.invalidateQueries({ queryKey: queryKeys.lists() });
       },
     });
@@ -178,11 +196,11 @@ export function createCrudService<
   const useDelete = () => {
     const queryClient = useQueryClient();
     return useMutation({
-      mutationFn: async (id: number) => {
-        await deleteItem<T, ListMeta>(config, id);
-        return id;
+      mutationFn: async (key: Id) => {
+        await deleteItem<T, ListMeta, Id>(config, key);
+        return key;
       },
-      onMutate: async (id) => {
+      onMutate: async (key) => {
         await queryClient.cancelQueries({ queryKey: queryKeys.lists() });
         const previous = queryClient.getQueriesData<
           T[] | ListResponse<T, ListMeta>
@@ -198,7 +216,7 @@ export function createCrudService<
             const arr = isListResponse
               ? (old as ListResponse<T, ListMeta>).list
               : ((old ?? []) as T[]);
-            const nextList = arr.filter((item) => item.id !== id);
+            const nextList = arr.filter((item) => !isSameKey(config, item, key));
             return isListResponse
               ? { ...(old as ListResponse<T, ListMeta>), list: nextList }
               : nextList;
@@ -206,9 +224,9 @@ export function createCrudService<
         );
         return { previous };
       },
-      onError: (_err, _id, context) => {
+      onError: (_err, _key, context) => {
         (context?.previous as Array<[QueryKey, unknown]> | undefined)?.forEach(
-          ([key, data]) => queryClient.setQueryData(key, data)
+          ([qk, data]) => queryClient.setQueryData(qk, data)
         );
       },
       onSettled: () => {
@@ -287,4 +305,19 @@ export function createCrudService<
  *                 update({ id: 1, title: "New Title", body: "...", userId: 1 });
  * 5. DELETE:      const { mutate: deleteItem } = useDeletePost();
  *                 deleteItem(1);
+ *
+ * --- Example 5: Composite key (memberId + key) ---
+ *
+ * type MemberItemKey = { memberId: number; key: string };
+ * interface MemberItem extends MemberItemKey { name: string; }
+ * const service = createCrudService<MemberItem, undefined, void, MemberItemKey>({
+ *   entityKey: "member-items",
+ *   baseUrl: "/api/members/1/items",
+ *   getItemUrl: (k) => `/api/members/${k.memberId}/items/${k.key}`,
+ *   getKeyFromEntity: (e) => ({ memberId: e.memberId, key: e.key }),
+ * });
+ * const { data } = service.useGetItem({ memberId: 1, key: "x" });
+ * service.useCreate().mutate({ memberId: 1, key: "x", name: "New" });
+ * service.useUpdate().mutate({ memberId: 1, key: "x", name: "Updated" });
+ * service.useDelete().mutate({ memberId: 1, key: "x" });
  */

@@ -101,7 +101,10 @@ export const { useGetList, useGetItem, useCreate, useUpdate, useDelete } = userS
 // Or alias: export const useGetUsers = userService.useGetList;
 // For server-side filtering, use third generic: createCrudService<User, undefined, { role: string }>(...)
 // then useGetList({ role: "admin" }) to fetch /api/users?role=admin
+// For composite keys (e.g. memberId + key), use fourth generic Id and config.getItemUrl + config.getKeyFromEntity — see CRUDService.ts
 ```
+
+If you need the same CRUD operations outside React hooks (e.g. in route handlers or server components), use pure async helpers from `src/services/CRUDLogic.ts`.
 
 ### Add Client State (Zustand with Persistence)
 

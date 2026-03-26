@@ -4,6 +4,7 @@ import {
   deleteItem,
   fetchItem,
   fetchList,
+  isSameKey,
   updateItem,
   type CrudEntity,
   type ListResponse,
@@ -249,6 +250,114 @@ describe("crudLogic", () => {
 
       expect(fetchSpy).toHaveBeenCalledWith("/api/items/1", {
         method: "DELETE",
+      });
+    });
+  });
+
+  describe("composite key", () => {
+    type MemberItemKey = { memberId: number; key: string };
+    interface MemberItem extends MemberItemKey {
+      name: string;
+    }
+
+    const compositeConfig: import("@/services/CRUDLogic").CrudServiceConfig<
+      MemberItem,
+      undefined,
+      MemberItemKey
+    > = {
+      entityKey: "member-items",
+      baseUrl: "/api/members/1/items",
+      getItemUrl: (k) => `/api/members/${k.memberId}/items/${k.key}`,
+      getKeyFromEntity: (e) => ({ memberId: e.memberId, key: e.key }),
+    };
+
+    it("fetchItem uses getItemUrl for composite key", async () => {
+      jest.spyOn(global, "fetch").mockResolvedValue(
+        new Response(
+          JSON.stringify({ memberId: 1, key: "x", name: "Item X" }),
+          { status: 200 }
+        )
+      );
+
+      const data = await fetchItem<MemberItem, undefined, MemberItemKey>(
+        compositeConfig,
+        { memberId: 1, key: "x" }
+      );
+
+      expect(data).toEqual({ memberId: 1, key: "x", name: "Item X" });
+      expect(global.fetch).toHaveBeenCalledWith("/api/members/1/items/x");
+    });
+
+    it("updateItem uses getKeyFromEntity and getItemUrl", async () => {
+      const fetchSpy = jest.spyOn(global, "fetch").mockResolvedValue(
+        new Response(
+          JSON.stringify({ memberId: 1, key: "x", name: "Updated" }),
+          { status: 200 }
+        )
+      );
+
+      await updateItem<MemberItem, undefined, MemberItemKey>(compositeConfig, {
+        memberId: 1,
+        key: "x",
+        name: "Updated",
+      });
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        "/api/members/1/items/x",
+        expect.objectContaining({
+          method: "PATCH",
+          body: JSON.stringify({
+            memberId: 1,
+            key: "x",
+            name: "Updated",
+          }),
+        })
+      );
+    });
+
+    it("deleteItem uses getItemUrl for composite key", async () => {
+      const fetchSpy = jest.spyOn(global, "fetch").mockResolvedValue(
+        new Response(JSON.stringify({}), { status: 200 })
+      );
+
+      await deleteItem<MemberItem, undefined, MemberItemKey>(compositeConfig, {
+        memberId: 1,
+        key: "x",
+      });
+
+      expect(fetchSpy).toHaveBeenCalledWith("/api/members/1/items/x", {
+        method: "DELETE",
+      });
+    });
+
+    describe("isSameKey", () => {
+      it("compares numeric keys", () => {
+        const config = { entityKey: "items", baseUrl: "/api/items" };
+        expect(isSameKey(config, { id: 1, name: "A" }, 1)).toBe(true);
+        expect(isSameKey(config, { id: 1, name: "A" }, 2)).toBe(false);
+      });
+
+      it("compares composite keys by all key fields", () => {
+        expect(
+          isSameKey(compositeConfig, { memberId: 1, key: "x", name: "A" }, { memberId: 1, key: "x" })
+        ).toBe(true);
+        expect(
+          isSameKey(compositeConfig, { memberId: 1, key: "x", name: "A" }, { memberId: 1, key: "y" })
+        ).toBe(false);
+      });
+
+      it("returns false for key type mismatch", () => {
+        expect(
+          isSameKey(
+            compositeConfig as unknown as import("@/services/CRUDLogic").CrudServiceConfig<
+              MemberItem,
+              undefined,
+              number
+            >,
+            { memberId: 1, key: "x", name: "A" } as unknown as MemberItem,
+            1
+          )
+        ).toBe(false);
       });
     });
   });

@@ -15,7 +15,7 @@ Project-level conventions reflected in the codebase. When in doubt, follow exist
 
 ## State
 
-- **Server state**: TanStack Query in `src/services/`. Use `createCrudService<T>()` from `CRUDService.ts` for new entities; it provides a query key factory and hooks with optimistic updates for create/delete. List responses: raw array, `listFromResponse` (unwrap to T[]), or `parseListResponse` (list + metadata). Optional third generic `ListParams` types query params for the list endpoint; pass to `useGetList(params)` for server-side filtering. See CRUDService.ts JSDoc.
+- **Server state**: TanStack Query in `src/services/`. Use `createCrudService<T>()` from `CRUDService.ts` for new entities; it provides a query key factory and hooks with optimistic updates for create/delete. Default is single numeric `id`; for composite keys use the fourth generic `Id` and config `getItemUrl` + `getKeyFromEntity`. List responses: raw array, `listFromResponse` (unwrap to T[]), or `parseListResponse` (list + metadata). Optional third generic `ListParams` types query params for the list endpoint; pass to `useGetList(params)` for server-side filtering. For server-only contexts (route handlers/server components), use pure helpers from `CRUDLogic.ts` (`fetchList`, `fetchItem`, `createItem`, `updateItem`, `deleteItem`) instead of hooks. See JSDoc in both files.
 - **Client state**: Zustand in `src/store/`. Use `persist` + `createJSONStorage(() => localStorage)` when persistence is needed. For Next.js, read persisted state only after mount (e.g. `useIsMounted`).
 
 ## Styling

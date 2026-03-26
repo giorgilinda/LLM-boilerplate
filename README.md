@@ -39,8 +39,9 @@ src/
 │   └── useIsMounted.ts  # Hydration-safe mounting hook
 ├── providers/        # React context providers
 │   └── TanStackProvider.tsx  # TanStack Query provider with devtools
-├── services/         # API services using TanStack Query
-│   └── CRUDService.ts        # Generic CRUD factory with optimistic updates
+├── services/         # API services and reusable CRUD logic
+│   ├── CRUDLogic.ts          # Pure async CRUD helpers (server-safe)
+│   └── CRUDService.ts        # TanStack Query CRUD factory + optimistic updates
 ├── store/            # Zustand state stores
 │   └── useAppStore.ts        # Global app state with persistence
 ├── utils/            # Utility functions
@@ -149,9 +150,9 @@ TanStack Query handles all server state - data fetching, caching, and synchroniz
 - Query caching with 1-minute stale time
 - React Query Devtools (in development)
 
-The CRUD service (`src/services/CRUDService.ts`) exports a **generic `createCrudService<T>()` factory**. Create services for any entity by calling the factory. List responses can be plain arrays, unwrapped via `listFromResponse`, or list-plus-metadata via `parseListResponse` (see JSDoc in CRUDService.ts). Optional third generic `ListParams` types query params for the list endpoint; pass an object to `useGetList(params)` for server-side filtering (e.g. `useGetList({ status: "alive" })`).
+The CRUD service (`src/services/CRUDService.ts`) exports a **generic `createCrudService<T>()` factory**. Create services for any entity by calling the factory. Default is a single numeric `id`; for **composite keys** (e.g. `memberId` + `key`), use the fourth generic `Id` and provide `getItemUrl` and `getKeyFromEntity` in config (see JSDoc in CRUDService.ts). List responses can be plain arrays, unwrapped via `listFromResponse`, or list-plus-metadata via `parseListResponse`. Optional third generic `ListParams` types query params for the list endpoint; pass an object to `useGetList(params)` for server-side filtering (e.g. `useGetList({ status: "alive" })`).
 
-For server-side logic (route handlers, server components), the same CRUD HTTP logic is available as **pure async functions** in `src/services/crudLogic.ts` (no React Query hooks).
+For server-side logic (route handlers, server components), the same CRUD HTTP logic is available as **pure async functions** in `src/services/CRUDLogic.ts` (no React Query hooks).
 
 ```typescript
 import { createCrudService, type CrudEntity } from "@/services/CRUDService";
@@ -176,7 +177,7 @@ createUser({ name: "Jane", email: "jane@example.com" });  // id omitted
 Example server-side usage (pure functions):
 
 ```typescript
-import { fetchList } from "@/services/crudLogic";
+import { fetchList } from "@/services/CRUDLogic";
 
 const users = await fetchList(
   { entityKey: "users", baseUrl: "/api/users" },
@@ -248,7 +249,8 @@ Tests are located in the `tests/` directory. Example tests are included for:
 
 - Utility functions (`tests/utils.test.ts`) – formatDate, capitalize, debounce
 - Components (`tests/components/Button.test.tsx`, `tests/components/Card.test.tsx`)
-- CRUD service (`tests/services/CRUDService.test.ts`) – query keys, URL building, listFromResponse
+- CRUD logic (`tests/services/CRUDLogic.test.ts`) - URL building, request contracts, composite-key helpers
+- CRUD service (`tests/services/CRUDService.test.tsx`) - query keys, optimistic updates, list/metadata handling
 
 CI runs on push/PR to `main` or `master` (`.github/workflows/ci.yml`): install, lint, test, build.
 
