@@ -50,6 +50,51 @@ npm install
 npm run dev
 ```
 
+## 👤 Adjust Git User and SSH (Per Repository)
+
+Use this when you need a specific GitHub account for one repo without changing your global Git config.
+
+### Step 1: Set repository-local Git identity
+
+```bash
+# Run inside your repository root
+git config --local user.name "YOUR_GITHUB_USERNAME"
+git config --local user.email "YOUR_GITHUB_EMAIL"
+```
+
+Verify:
+
+```bash
+git config --local --get user.name
+git config --local --get user.email
+```
+
+### Step 2: Configure an SSH host alias
+
+Add an entry in `~/.ssh/config`:
+
+```sshconfig
+Host github.com-YOUR_ALIAS
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/YOUR_PRIVATE_KEY_FILE
+```
+
+### Step 3: Point `origin` to SSH alias
+
+```bash
+git remote set-url origin git@github.com-YOUR_ALIAS:YOUR_USERNAME/YOUR_REPO.git
+git remote -v
+```
+
+### Step 4: Test SSH auth
+
+```bash
+ssh -T github.com-YOUR_ALIAS
+```
+
+If authentication works, new commits in this repo will use the local `user.name`/`user.email`, and pushes will use the SSH key from your alias.
+
 ### Option 2: Use GitHub Template
 
 1. Go to your boilerplate repository on GitHub
