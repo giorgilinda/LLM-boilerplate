@@ -115,7 +115,7 @@ After cloning this boilerplate, make sure to:
 
 - [ ] Update `package.json` name, version, and description
 - [ ] Update `src/app/layout.tsx` metadata (title, description)
-- [ ] Customize `src/styles/theme.css` colors
+- [ ] Customize semantic theme tokens in `src/styles/tokens/semantics.css`
 - [ ] Update README.md with your project details
 - [ ] Add environment variables to `.env.local` (see env.example)
 - [ ] Delete or modify example components/tests as needed

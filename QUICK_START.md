@@ -42,7 +42,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Colors & Theme
 
-Edit `src/styles/theme.css` to customize colors:
+Edit semantic tokens in `src/styles/tokens/semantics.css` to customize your app theme, and primitive palettes in `src/styles/tokens/primitives.css` when you need to redefine the base color scale:
 
 ```css
 :root {

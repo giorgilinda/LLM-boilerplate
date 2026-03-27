@@ -30,7 +30,6 @@ src/
 │   ├── layout.tsx    # Root layout with metadata
 │   ├── page.tsx      # Home page
 │   ├── not-found.tsx # Custom 404 page
-│   ├── globals.css   # Global styles
 │   └── templates/    # Page templates
 │       ├── BaseTemplate.tsx        # Main layout with header/footer
 │       └── BaseTemplate.module.css # Template styles
@@ -47,8 +46,10 @@ src/
 ├── utils/            # Utility functions
 │   ├── constants.ts  # App-wide constants (name, description, emoji)
 │   └── index.ts      # Common utilities (formatDate, capitalize, debounce)
-└── styles/           # Global styles and theme
-    └── theme.css     # CSS variables for theming
+└── styles/           # Layered global styles and design tokens
+    ├── globals.css   # Main global stylesheet imported by app layout
+    ├── layers.css    # CSS layer order declaration
+    └── tokens/       # Primitive + semantic CSS variables
 .cursor/              # Cursor AI workflow configuration
 ├── commands/         # Slash command templates
 └── rules/            # Auto-applied behavior rules for the AI agent
@@ -99,7 +100,7 @@ npm start
 
 ## 🎨 Theming
 
-The boilerplate includes a comprehensive theme system using CSS variables. Customize colors, spacing, typography, and more in `src/styles/theme.css`:
+The boilerplate includes a layered CSS token system. Customize core palettes in `src/styles/tokens/primitives.css` and semantic tokens (component-facing variables) in `src/styles/tokens/semantics.css`.
 
 ```css
 :root {
@@ -109,7 +110,7 @@ The boilerplate includes a comprehensive theme system using CSS variables. Custo
 }
 ```
 
-Dark mode is automatically enabled based on system preferences. Customize dark mode styles in the `@media (prefers-color-scheme: dark)` section.
+Dark mode is automatically enabled based on system preferences. Customize dark mode values in `src/styles/tokens/semantics.css` under `@media (prefers-color-scheme: dark)`.
 
 ## 🏗️ Templates
 

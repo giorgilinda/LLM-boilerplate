@@ -21,7 +21,7 @@ Project-level conventions reflected in the codebase. When in doubt, follow exist
 ## Styling
 
 - **Scoped styles**: CSS Modules (`.module.css`) next to components.
-- **Global/theme**: `src/app/globals.css` imports `src/styles/theme.css` for CSS variables. Use variables for colors, typography, and spacing.
+- **Global/theme**: `src/app/layout.tsx` imports `src/styles/globals.css`. Keep the global layer order in `src/styles/layers.css`, primitive tokens in `src/styles/tokens/primitives.css`, and semantic tokens in `src/styles/tokens/semantics.css`.
 
 ## Constants and config
 
