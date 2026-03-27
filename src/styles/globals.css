@@ -1,0 +1,239 @@
+/* src/styles/globals.css */
+
+/* 1. Define the order first so the browser knows the priority */
+@layer reset, base, tokens, components, utilities;
+@import "./layers.css" layer(base);
+
+/* 2. Import your layers */
+@import "./tokens/primitives.css" layer(tokens);
+@import "./tokens/semantics.css" layer(tokens);
+
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  /* Remove default margins for common layout elements */
+  body,
+  h1,
+  h2,
+  h3,
+  h4,
+  p,
+  figure,
+  blockquote,
+  dl,
+  dd {
+    margin: 0;
+  }
+
+  /* Set core body defaults */
+  body {
+    min-height: 100vh;
+    text-rendering: optimizeSpeed;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Make images and media easier to work with */
+  img,
+  picture,
+  svg,
+  video,
+  canvas {
+    display: block;
+    max-width: 100%;
+  }
+
+  /* Inherit fonts for inputs and buttons */
+  input,
+  button,
+  textarea,
+  select {
+    font: inherit;
+  }
+}
+
+@layer base {
+  html {
+    background-color: var(--color-background);
+  }
+
+  body {
+    font-family: var(--font-family-primary);
+    font-size: var(--font-size-base);
+    color: var(--color-text-primary);
+
+    /* Apply fixed safe areas */
+    padding-top: var(--mobile-safe-area-top);
+    padding-bottom: var(--mobile-safe-area-bottom);
+    padding-left: var(--mobile-safe-area-left);
+    padding-right: var(--mobile-safe-area-right);
+
+    /* Smooth theme switching */
+    transition: background-color var(--transition-base),
+      color var(--transition-base);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--color-text-primary);
+    font-weight: 700;
+  }
+
+  a {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+  }
+
+  a:hover {
+    color: var(--color-primary-dark);
+  }
+}
+
+@layer components {
+  /* Base button styles */
+  button,
+  .button {
+    display: inline-block;
+    padding: var(--space-sm) var(--space-lg);
+    margin: var(--space-sm) 0;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-inverse);
+    background-color: var(--color-primary);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    box-shadow: var(--shadow-sm);
+    min-height: var(--mobile-touch-target);
+    min-width: var(--mobile-touch-target);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  button:hover,
+  .button:hover {
+    background-color: var(--color-primary-dark);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+
+  button:active,
+  .button:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+  }
+
+  button:disabled,
+  .button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--color-text-secondary);
+  }
+
+  button:disabled:hover,
+  .button:disabled:hover {
+    transform: none;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Secondary button variant */
+  button.secondary,
+  .button.secondary {
+    background-color: var(--color-secondary);
+  }
+
+  button.secondary:hover,
+  .button.secondary:hover {
+    background-color: var(--color-secondary-dark);
+  }
+
+  /* Outline button variant */
+  button.outline,
+  .button.outline {
+    background-color: transparent;
+    color: var(--color-primary);
+    border: 2px solid var(--color-primary);
+  }
+
+  button.outline:hover,
+  .button.outline:hover {
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+  }
+
+  /* Input styles */
+  input,
+  textarea,
+  select {
+    font-family: var(--font-family-primary);
+    font-size: var(--font-size-base);
+    padding: var(--space-sm) var(--space-md);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    transition: border-color var(--transition-base);
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+
+  /* Card styles */
+  .card {
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    box-shadow: var(--shadow-md);
+    transition: box-shadow var(--transition-base);
+  }
+
+  .card:hover {
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+@layer utilities {
+  .text-primary {
+    color: var(--color-primary);
+  }
+
+  .text-secondary {
+    color: var(--color-secondary);
+  }
+
+  .text-success {
+    color: var(--color-success);
+  }
+
+  .text-error {
+    color: var(--color-error);
+  }
+
+  .text-muted {
+    color: var(--color-text-secondary);
+  }
+
+  .bg-primary {
+    background-color: var(--color-primary);
+  }
+
+  .bg-secondary {
+    background-color: var(--color-secondary);
+  }
+
+  .bg-surface {
+    background-color: var(--color-surface);
+  }
+}

@@ -1,0 +1,148 @@
+:root {
+  --light-percentage: 0.5;
+  --dark-percentage: 1.5;
+
+  /* Primary Colors */
+  --color-primary: var(--blue-500);
+  --color-primary-light: oklch(
+    from var(--color-primary) calc(l + var(--light-percentage)) c h
+  );
+  --color-primary-dark: oklch(
+    from var(--color-primary) calc(l + var(--dark-percentage)) c h
+  );
+
+  /* Secondary Colors */
+  --color-secondary: var(--violet-500);
+  --color-secondary-light: oklch(
+    from var(--color-secondary) calc(l + var(--light-percentage)) c h
+  );
+  --color-secondary-dark: oklch(
+    from var(--color-secondary) calc(l + var(--dark-percentage)) c h
+  );
+
+  /* Accent Colors */
+  --color-accent: var(--amber-500);
+  --color-accent-light: oklch(
+    from var(--color-accent) calc(l + var(--light-percentage)) c h
+  );
+  --color-accent-dark: oklch(
+    from var(--color-accent) calc(l + var(--dark-percentage)) c h
+  );
+
+  /* Success/Positive */
+  --color-success: var(--green-500);
+  --color-success-light: oklch(
+    from var(--color-success) calc(l + var(--light-percentage)) c h
+  );
+  --color-success-dark: oklch(
+    from var(--color-success) calc(l + var(--dark-percentage)) c h
+  );
+
+  /* Warning/Alert */
+  --color-warning: var(--amber-500);
+  --color-warning-light: oklch(
+    from var(--color-warning) calc(l + var(--light-percentage)) c h
+  );
+  --color-warning-dark: oklch(
+    from var(--color-warning) calc(l + var(--dark-percentage)) c h
+  );
+
+  /* Error/Danger */
+  --color-error: var(--red-500);
+  --color-error-light: oklch(
+    from var(--color-error) calc(l + var(--light-percentage)) c h
+  );
+  --color-error-dark: oklch(
+    from var(--color-error) calc(l + var(--dark-percentage)) c h
+  );
+
+  /* Neutral Colors */
+  --color-background: var(--neutral-50);
+  --color-background-alt: var(--neutral-100);
+  --color-surface: var(--neutral-50);
+  --color-border: var(--neutral-200);
+  --color-border-light: oklch(
+    from var(--color-border) calc(l + var(--light-percentage)) c h
+  );
+
+  /* Text Colors */
+  --color-text-primary: var(--neutral-900);
+  --color-text-secondary: var(--neutral-500);
+  --color-text-tertiary: var(--neutral-400);
+  --color-text-inverse: var(--neutral-50);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+
+  /* Border Radius Semantics */
+  --radius-sm: var(--ref-size-4);
+  --radius-md: var(--ref-size-8);
+  --radius-lg: var(--ref-size-12);
+  --radius-xl: var(--ref-size-16);
+  --radius-round: var(--ref-size-full);
+
+  /* Spacing Semantics */
+  --space-xs: var(--ref-size-4);
+  --space-sm: var(--ref-size-8);
+  --space-md: var(--ref-size-16);
+  --space-lg: var(--ref-size-24);
+  --space-xl: var(--ref-size-32);
+  --space-2xl: var(--ref-size-48);
+
+  /* Typography Semantics */
+  --font-family-primary: var(--ref-font-sans);
+  --font-size-xs: var(--ref-text-12);
+  --font-size-sm: var(--ref-text-14);
+  --font-size-base: var(--ref-text-16);
+  --font-size-lg: var(--ref-text-18);
+  --font-size-xl: var(--ref-text-20);
+  --font-size-2xl: var(--ref-text-24);
+  --font-size-3xl: var(--ref-text-30);
+  --font-size-4xl: var(--ref-text-36);
+
+  /* Transitions */
+  --transition-fast: var(--ref-duration-fast) var(--ref-ease-standard);
+  --transition-base: var(--ref-duration-base) var(--ref-ease-standard);
+  --transition-slow: var(--ref-duration-slow) var(--ref-ease-standard);
+
+  /* Mobile/System specifics */
+  --mobile-safe-area-top: env(safe-area-inset-top, 0px);
+  --mobile-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --mobile-safe-area-left: env(safe-area-inset-left, 0px);
+  --mobile-safe-area-right: env(safe-area-inset-right, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Adjust these for dark mode if hover effects feel too subtle */
+    --light-percentage: 0.1;
+    --dark-percentage: 0.1;
+
+    /* 1. Backgrounds - Move from white to deep slate */
+    --color-background: var(--slate-950);
+    --color-background-alt: var(--slate-900);
+    --color-surface: var(--slate-900);
+
+    /* 2. Borders - Subtle contrast */
+    --color-border: var(--slate-800);
+    --color-border-light: var(--slate-900);
+
+    /* 3. Text - High contrast for readability */
+    --color-text-primary: var(--slate-50);
+    --color-text-secondary: var(--slate-400);
+    --color-text-tertiary: var(--slate-500);
+    --color-text-inverse: var(--slate-950);
+
+    /* 4. Interactive - Use slightly lighter versions for better "glow" on dark */
+    --color-primary: var(--blue-400);
+    --color-secondary: var(--violet-400);
+    --color-accent: var(--amber-400);
+
+    /* 5. Shadows - Shadows need to be darker and more opaque in dark mode */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  }
+}
