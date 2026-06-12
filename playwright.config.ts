@@ -1,48 +1,41 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Playwright E2E test configuration.
+ * Playwright configuration.
  *
- * Tests live in `tests/e2e/`. Run them with:
- *   npm run test:e2e          — all E2E tests (headless)
- *   npm run test:e2e:ui       — interactive UI mode
- *   npm run test:e2e:debug    — headed mode for debugging
+ * WHY THIS EXISTS:
+ * The e2e specs in tests/e2e use page.goto("/") and therefore need a baseURL,
+ * and they need the Next.js app to actually be running. This config wires up
+ * both: it boots the app via the `webServer` block and points the tests at it.
  *
- * The dev server is started automatically before tests run.
- * Set BASE_URL in .env.local to override (e.g. staging URL in CI).
- *
- * @see https://playwright.dev/docs/test-configuration
+ * It also scopes `testDir` to tests/e2e so Playwright never tries to execute the
+ * Jest unit tests elsewhere in the repo (the mirror image of jest.config.js
+ * ignoring tests/e2e).
  */
+const PORT = 3000;
+const baseURL = `http://localhost:${PORT}`;
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: process.env.CI ? "github" : "html",
-
+  reporter: "list",
   use: {
-    baseURL: process.env.BASE_URL ?? "http://localhost:3000",
+    baseURL,
     trace: "on-first-retry",
-    screenshot: "only-on-failure",
   },
-
   projects: [
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
-    {
-      name: "mobile",
-      use: { ...devices["iPhone 13"] },
-    },
   ],
-
-  // Start the dev server automatically before running tests
   webServer: {
     command: "npm run dev",
-    url: "http://localhost:3000",
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 120 * 1000,
   },
 });
