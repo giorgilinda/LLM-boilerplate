@@ -1,6 +1,7 @@
 # 🤖 Cursor AI Operational Guide
 
 Welcome! This repository is engineered to work with **Cursor's Agentic Workflow**. It uses a disciplined, research-first framework that transforms the AI from a simple autocomplete tool into an **Autonomous Principal Engineer**.
+> For general AI agent instructions (build, test, conventions), see AGENT.md.
 
 ---
 

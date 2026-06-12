@@ -100,6 +100,12 @@ Git operations on known repos, reading files with known exact paths, running kno
 **MUST use research protocol for:**
 Finding files in unknown directories, searching without exact location, discovering what exists, any operation where "not found" is possible, exploring unfamiliar environments.
 
+## fix_plan.md
+- Read `fix_plan.md` at the start of every session before making any changes
+- After completing work, update fix_plan.md: mark completed items [x], add newly discovered issues
+- Never delete completed items — they are a record
+- If fix_plan.md does not exist, create it from the template in the repo root
+
 ### The 8-Step Protocol
 
 <research_protocol>

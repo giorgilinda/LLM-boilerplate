@@ -1,0 +1,67 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: var(--color-background, #fafafa);
+}
+
+.card {
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  padding: 2.5rem 2rem;
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 12px;
+}
+
+.emoji {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #111827);
+  margin-bottom: 0.75rem;
+}
+
+.message {
+  font-size: 0.9375rem;
+  color: var(--color-text-secondary, #6b7280);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.digest {
+  font-size: 0.75rem;
+  font-family: var(--font-mono, monospace);
+  color: var(--color-text-tertiary, #9ca3af);
+  margin-bottom: 1.25rem;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.5rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--color-text-on-primary, #ffffff);
+  background: var(--color-primary, #0070f3);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.button:hover {
+  opacity: 0.88;
+}
+
+.button:active {
+  opacity: 0.75;
+}
