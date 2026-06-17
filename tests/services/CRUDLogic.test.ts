@@ -350,11 +350,11 @@ describe("crudLogic", () => {
         expect(
           isSameKey(
             compositeConfig as unknown as import("@/services/CRUDLogic").CrudServiceConfig<
-              MemberItem,
+              CrudEntity,
               undefined,
               number
             >,
-            { memberId: 1, key: "x", name: "A" } as unknown as MemberItem,
+            { memberId: 1, key: "x", name: "A" } as unknown as CrudEntity,
             1
           )
         ).toBe(false);

@@ -6,7 +6,7 @@ describe("app/layout", () => {
   it("creates the html shell structure with head and body", () => {
     const element = RootLayout({
       children: <div>Page content</div>,
-    }) as React.ReactElement;
+    }) as React.ReactElement<{ lang: string; children: React.ReactNode }>;
 
     expect(element.type).toBe("html");
     expect(element.props.lang).toBe("en");
@@ -20,7 +20,11 @@ describe("app/layout", () => {
   it("exports metadata based on app constants", () => {
     expect(metadata.title).toBe(APP_NAME);
     expect(metadata.description).toBe(APP_DESCRIPTION);
-    expect(metadata.appleWebApp?.title).toBe(APP_NAME);
+    const appleWebApp = metadata.appleWebApp as Exclude<
+      typeof metadata.appleWebApp,
+      boolean
+    >;
+    expect(appleWebApp?.title).toBe(APP_NAME);
   });
 
   it("exports mobile-friendly viewport defaults", () => {
