@@ -25,7 +25,7 @@ import type { LLMModelRef } from "./types";
 // adding its pricing here too. See HOW_TO_USE.md "Adding a new provider".
 const PRICING_PER_MILLION_TOKENS: Record<string, { input: number; output: number }> = {
   "claude-sonnet-4-6": { input: 3, output: 15 },
-  "claude-haiku-4-5-20251001": { input: 0.8, output: 4 },
+  "claude-haiku-4-5-20251001": { input: 1, output: 5 },
 };
 
 // Conservative assumption used only for the BEFORE-the-call estimate below.
