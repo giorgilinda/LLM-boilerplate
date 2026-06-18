@@ -30,10 +30,6 @@ npm run check      # lint + test (run before committing)
 
 Copy `env.example` to `.env.local` before running locally.
 
-Key variables:
-- `NEXT_PUBLIC_MOCK_MODE` — set to `true` to bypass all external API calls (LLM, etc.) with mock responses. Use this during UI development.
-- `NEXT_PUBLIC_LLM_MODEL` — which LLM model to use. Use a cheap/fast model during development, switch to the production model for quality checks.
-
 See `env.example` for the full list.
 
 ## Project structure
@@ -44,7 +40,6 @@ src/
 ├── components/       # Reusable UI components (CSS Modules)
 ├── hooks/            # Custom React hooks
 ├── lib/              # Deep modules: complex logic behind clean interfaces
-│   └── llm/          # LLM abstraction (see src/lib/llm/README.md)
 ├── providers/        # React context providers
 ├── services/         # Server state (TanStack Query CRUD factory)
 ├── store/            # Client state (Zustand)
@@ -58,14 +53,12 @@ See `CONVENTIONS.md` for the full list. Key rules:
 - Components: arrow functions with `React.FC<Props>`, PascalCase filenames
 - Server state: TanStack Query via `createCrudService<T>()` in `src/services/`
 - Client state: Zustand in `src/store/`, use `persist` when localStorage needed
-- LLM calls: always through `src/lib/llm/` — never call the API directly from components or pages
 - Styling: CSS Modules scoped to components, global tokens in `src/styles/tokens/`
 - Never hardcode API keys or secrets — use `.env.local`
 
 ## AI assistant rules
 
 - **Research before implementing**: read relevant files before making changes
-- **Mock mode first**: use `MockLLMService` (via `NEXT_PUBLIC_MOCK_MODE=true`) for all UI work — never burn real API tokens testing layout or state logic
 - **One thing at a time**: implement one feature or fix per session, commit when tests pass
 - **No placeholder implementations**: if a function is called, it must be fully implemented
 - **Tests document intent**: when writing tests, explain in a JSDoc block *why* the test exists and what it protects against
@@ -78,5 +71,4 @@ mark done items `[x]`, add newly discovered issues, keep it accurate.
 
 <!-- Add project-specific traps here as you discover them -->
 - Zustand persisted state requires `useIsMounted` check to avoid Next.js hydration mismatch (see `src/hooks/useIsMounted.ts`)
-- LLM API calls must be server-side only (Next.js API routes) — never expose API keys to the client
 - _TODO: add more as you discover them_

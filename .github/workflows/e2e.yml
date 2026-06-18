@@ -28,14 +28,10 @@ jobs:
 
       - name: Build app
         run: npm run build
-        env:
-          # Use mock mode in CI so E2E tests don't need real API keys
-          NEXT_PUBLIC_MOCK_MODE: true
 
       - name: Run E2E tests
         run: npm run test:e2e
         env:
-          NEXT_PUBLIC_MOCK_MODE: true
           CI: true
 
       - name: Upload test results
