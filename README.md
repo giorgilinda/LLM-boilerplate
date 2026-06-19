@@ -9,6 +9,7 @@ A modern, production-ready Next.js boilerplate with TypeScript, Jest, ESLint, an
 - **TypeScript** - Type-safe development
 - **TanStack Query** - Server state with CRUD examples and optimistic updates
 - **Zustand** - Client state with localStorage persistence
+- **i18n** - Dependency-free, type-safe translations with a locale switcher
 - **Jest** - Unit and integration testing with coverage
 - **ESLint** - Code quality and consistency
 - **CSS Modules** - Scoped styling
@@ -35,7 +36,14 @@ src/
 │       └── BaseTemplate.module.css # Template styles
 ├── components/       # Reusable React components
 ├── hooks/            # Custom React hooks
-│   └── useIsMounted.ts  # Hydration-safe mounting hook
+│   ├── useIsMounted.ts   # Hydration-safe mounting hook
+│   └── useTranslation.ts # i18n hook: { t, locale, setLocale }
+├── lib/              # Framework-agnostic libraries
+│   └── i18n/         # Dependency-free translation layer
+│       ├── messages.ts        # Types, LOCALES, assembled messages map
+│       └── locales/           # Per-language JSON files (identical key sets)
+│           ├── en.json        # Canonical source of truth for keys
+│           └── es.json         # Example second locale
 ├── providers/        # React context providers
 │   └── TanStackProvider.tsx  # TanStack Query provider with devtools
 ├── services/         # API services and reusable CRUD logic
@@ -235,6 +243,46 @@ const MyComponent = () => {
 };
 ```
 
+## 🌍 Internationalization (i18n)
+
+A lightweight, **type-safe** translation layer with **zero runtime dependencies** (no `next-intl` / `react-i18next`). UI labels live in per-language JSON files that share an identical key set, and components read them through a `useTranslation()` hook.
+
+### How it works
+
+- `src/lib/i18n/locales/en.json` is the **canonical source of truth** for keys.
+- `src/lib/i18n/messages.ts` derives `MessageKey` from `en.json` and types the assembled map as `Record<Locale, Messages>`, so **a locale file missing a key is a compile error**.
+- The active locale is persisted in the Zustand store (`locale` + `setLocale`) and synced to `<html lang>`.
+
+```tsx
+import { useTranslation } from "@/hooks/useTranslation";
+
+const MyComponent = () => {
+  const { t, locale, setLocale } = useTranslation();
+  return (
+    <div>
+      <h2>{t("footer.contact")}</h2>
+      <button onClick={() => setLocale("es")}>Español</button>
+    </div>
+  );
+};
+```
+
+### Adding a string
+
+1. Add the key + English text to `src/lib/i18n/locales/en.json`.
+2. Translate the same key in **every other locale file** (e.g. `es.json`). TypeScript flags any file that is missing the new key.
+
+### Adding a locale
+
+1. Create `src/lib/i18n/locales/<code>.json` with the full key set.
+2. Add the code to `LOCALES` and a label to `LOCALE_LABELS` in `messages.ts`, then import the file into the `messages` map.
+
+### Hydration notes
+
+The locale comes from `localStorage` (client only), so `useTranslation()` is mount-guarded via `useIsMounted`: it renders `DEFAULT_LOCALE` during SSR/first paint, then swaps to the stored locale — expect a brief flash if a non-default locale is stored. `<html lang>` is server-rendered with `DEFAULT_LOCALE` and corrected client-side (in `BaseTemplate`) because `layout.tsx` is a server component and can't read persisted state directly.
+
+`BaseTemplate` consumes the hook and renders a header language `<select>`, doubling as the reference implementation.
+
 ## 📝 Example Components
 
 The boilerplate includes a few example components to get you started:
@@ -312,6 +360,7 @@ The project can be deployed to any platform that supports Next.js:
 - ✅ TypeScript configuration
 - ✅ TanStack Query with CRUD patterns and optimistic updates
 - ✅ Zustand with localStorage persistence
+- ✅ Dependency-free, type-safe i18n layer with locale switcher
 - ✅ Jest with React Testing Library
 - ✅ ESLint configuration
 - ✅ CSS Modules with theme system
@@ -354,7 +403,6 @@ The AI agent follows a research-first protocol, prioritizes code over documentat
 
 ## 🔮 Next Steps
 
-- Set up internationalization (i18n)
 - Add Storybook for component development
 - Configure CI/CD pipeline
 - Add end-to-end testing (Playwright, Cypress)

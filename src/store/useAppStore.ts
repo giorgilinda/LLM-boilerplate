@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/messages";
 
 /**
  * Interface representing the Global Application State.
@@ -10,12 +11,16 @@ interface AppState {
   isMenuOpen: boolean;
   /** Tracks the font size to use (persisted) */
   fontSize: number;
+  /** The active UI locale (persisted) */
+  locale: Locale;
   /** Sets the menu visibility state */
   setMenuOpen: (open: boolean) => void;
   /** Toggles the current menu state (True -> False / False -> True) */
   toggleMenu: () => void;
   /** Sets the font size state */
   setFontSize: (size: number) => void;
+  /** Sets the active UI locale */
+  setLocale: (locale: Locale) => void;
 }
 
 /**
@@ -35,11 +40,13 @@ export const useAppStore = create<AppState>()(
       // --- INITIAL STATE ---
       isMenuOpen: false,
       fontSize: 16,
+      locale: DEFAULT_LOCALE,
 
       // --- ACTIONS ---
       setMenuOpen: (open) => set({ isMenuOpen: open }),
       toggleMenu: () => set((state) => ({ isMenuOpen: !state.isMenuOpen })),
       setFontSize: (size) => set({ fontSize: size }),
+      setLocale: (locale) => set({ locale }),
     }),
     {
       /** Unique name for the item in localStorage */

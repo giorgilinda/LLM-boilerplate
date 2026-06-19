@@ -23,6 +23,15 @@ Project-level conventions reflected in the codebase. When in doubt, follow exist
 - **Scoped styles**: CSS Modules (`.module.css`) next to components.
 - **Global/theme**: `src/app/layout.tsx` imports `src/styles/globals.css`. Keep the global layer order in `src/styles/layers.css`, primitive tokens in `src/styles/tokens/primitives.css`, and semantic tokens in `src/styles/tokens/semantics.css`.
 
+## Internationalization (i18n)
+
+- **No hardcoded UI strings**: every user-facing label goes through the translation layer in `src/lib/i18n/`, never inline in JSX.
+- **Catalog**: translations live in `src/lib/i18n/locales/<locale>.json` (one file per language, identical key sets). `en.json` is the source of truth for which keys exist; `messages.ts` wires the JSON files together and types each locale as `Record<MessageKey, string>`, so a missing key fails type-checking.
+- **Usage**: read strings in client components via `const { t } = useTranslation()` then `t("chat.send")`. The hook also returns `locale` + `setLocale` for building language switchers (e.g. the header `<select>` in `BaseTemplate.tsx`).
+- **Adding a string**: add the key to `en.json`, then translate it in every other locale file (TypeScript flags the gaps). Supported locales: `en`, `es` (see `LOCALES` in `messages.ts`).
+- **Hydration**: `useTranslation()` is mount-guarded (renders `DEFAULT_LOCALE` until mounted) to avoid Next.js hydration mismatches, mirroring the `useIsMounted` pattern.
+- **`<html lang>`**: rendered server-side with `DEFAULT_LOCALE` in `layout.tsx`, then synced to the active locale by an effect in `BaseTemplate`. Update both if you change how the locale is sourced.
+
 ## Constants and config
 
 - **App branding**: `src/utils/constants.ts` holds `APP_NAME`, `APP_DESCRIPTION`, `APP_EMOJI` for metadata and layout.

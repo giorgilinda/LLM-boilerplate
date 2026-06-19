@@ -4,6 +4,7 @@ import "../styles/globals.css";
 import BaseLayout from "./templates/BaseTemplate";
 import { APP_NAME, APP_DESCRIPTION, APP_EMOJI } from "@/utils/constants";
 import TanStackProvider from "@/providers/TanStackProvider";
+import { DEFAULT_LOCALE } from "@/lib/i18n/messages";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -33,7 +34,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    // Server-rendered with the default locale; the persisted locale is applied
+    // client-side in BaseTemplate (a server component can't read localStorage).
+    <html lang={DEFAULT_LOCALE}>
       <head>
         <link
           rel="icon"
