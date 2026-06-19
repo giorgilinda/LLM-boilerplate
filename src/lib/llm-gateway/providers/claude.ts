@@ -64,10 +64,13 @@ import type {
             "anthropic-version": "2023-06-01",
           },
           body: JSON.stringify({
-            model,
-            max_tokens: maxTokens,
-            system: systemPrompt,
-            messages: messages.map((m) => ({ role: m.role, content: m.content })),
+          model,
+          max_tokens: maxTokens,
+          system: systemPrompt,
+          // content is either a string or an array of text/image blocks whose
+          // shape already matches Anthropic's API exactly, so it passes
+          // through with no translation. See DESIGN.md "Multimodal".
+          messages: messages.map((m) => ({ role: m.role, content: m.content })),
           }),
         });
   

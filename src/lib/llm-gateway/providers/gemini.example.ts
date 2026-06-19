@@ -56,6 +56,12 @@ export class GeminiProviderAdapter implements LLMProviderAdapter {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: systemPrompt }] },
+            // NOTE: this example handles text-only content. `m.content` can
+            // now also be an array of text/image blocks (see MessageContent in
+            // types.ts). Unlike Claude, Gemini does not share Anthropic's block
+            // shape, so a real multimodal Gemini adapter must translate each
+            // block into Gemini's `parts` format (e.g. `inlineData` for images)
+            // here. Left text-only since this file is a template, not wired in.
             contents: messages.map((m) => ({
               role: m.role === "assistant" ? "model" : "user",
               parts: [{ text: m.content }],

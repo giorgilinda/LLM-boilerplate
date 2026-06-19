@@ -1,4 +1,9 @@
-import type { LLMProviderAdapter, LLMResponse, LLMMessage } from "../types";
+import type {
+  LLMProviderAdapter,
+  LLMResponse,
+  LLMMessage,
+  MessageContent,
+} from "../types";
 
 /**
  * MockProviderAdapter — used when NEXT_PUBLIC_MOCK_MODE=true.
@@ -19,6 +24,11 @@ const MOCK_RESPONSES: string[] = [
 
 let mockIndex = 0;
 
+function countImages(content: MessageContent | undefined): number {
+  if (!content || typeof content === "string") return 0;
+  return content.filter((block) => block.type === "image").length;
+}
+
 export class MockProviderAdapter implements LLMProviderAdapter {
   async chat({
     messages,
@@ -33,6 +43,19 @@ export class MockProviderAdapter implements LLMProviderAdapter {
     // Optional: inspect the last message to make mock responses context-aware
     const lastMessage = messages.at(-1)?.content ?? "";
     void lastMessage; // remove when adding context-aware mock logic
+
+    // Acknowledge image blocks so multimodal flows are testable end-to-end in
+    // NEXT_PUBLIC_MOCK_MODE without a real provider. When the latest message
+    // carries images, the mock calls them out instead of returning canned text.
+    const imageCount = countImages(messages.at(-1)?.content);
+    if (imageCount > 0) {
+      return {
+        ok: true,
+        message: `Mock vision response: received ${imageCount} image${imageCount === 1 ? "" : "s"}. Replace this branch in \`src/lib/llm-gateway/providers/mock.ts\`.`,
+        servedBy: { provider: "anthropic", model: "mock" },
+        usage: { inputTokens: 0, outputTokens: 0, estimatedCostUsd: 0 },
+      };
+    }
 
     const message = MOCK_RESPONSES[mockIndex % MOCK_RESPONSES.length];
     mockIndex++;

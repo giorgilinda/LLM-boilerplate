@@ -10,9 +10,40 @@
 // Conversation primitives
 // ---------------------------------------------------------------------------
 
+/**
+ * Multimodal content blocks.
+ *
+ * The block shapes below match Anthropic's Messages API exactly, so a
+ * MessageContent array passes straight through the Claude adapter with no
+ * translation step. See DESIGN.md "Multimodal".
+ */
+export interface TextBlock {
+  type: "text";
+  text: string;
+}
+
+export interface ImageBlock {
+  type: "image";
+  source: {
+    type: "base64";
+    media_type: "image/jpeg" | "image/png" | "image/webp" | "image/gif";
+    /** Raw base64 — the `data:...;base64,` prefix must be stripped by the app. */
+    data: string;
+  };
+}
+
+/**
+ * A message's content is either a plain string (text-only, the common case)
+ * or an array of content blocks (text + base64 images) for vision input.
+ *
+ * Keeping `string` in the union means every existing text-only call site
+ * keeps working unchanged — widening here is fully backward compatible.
+ */
+export type MessageContent = string | Array<TextBlock | ImageBlock>;
+
 export interface LLMMessage {
   role: "user" | "assistant";
-  content: string;
+  content: MessageContent;
 }
 
 // ---------------------------------------------------------------------------

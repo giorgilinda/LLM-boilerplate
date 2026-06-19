@@ -13,6 +13,14 @@ import type { LLMMessage, LLMResponse } from "@/lib/llm-gateway/types";
  * even on failure. Failures are communicated via `ok: false` in the body,
  * not HTTP status codes, so the client never needs special-case handling
  * for "the gateway failed" vs "the gateway succeeded but reported an error".
+ *
+ * PAYLOAD SIZE NOTE (multimodal): a message's content may be an array of
+ * text/image blocks, and base64-encoded images make request bodies far
+ * larger than text-only chats. Apps that accept image input should downscale
+ * client-side before encoding and enforce their own size limits. If you hit
+ * the platform body-size cap (e.g. Vercel's ~4.5MB serverless request limit),
+ * raise the route's limit via `export const config`/route segment options, or
+ * switch large uploads to a presigned-URL flow — both are app responsibilities.
  */
 export async function POST(request: NextRequest) {
   const body = await request.json();

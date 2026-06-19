@@ -1,4 +1,4 @@
-import type { LLMMessage } from "./types";
+import type { LLMMessage, MessageContent } from "./types";
 
 /**
  * Generic message-history trimmer — provider-agnostic.
@@ -13,8 +13,27 @@ import type { LLMMessage } from "./types";
  * this is a trim function, not a billing calculation.
  */
 
-function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4);
+/**
+ * Flat per-image token estimate. A safe over-estimate for trimming purposes —
+ * Claude bills roughly (width × height) / 750 tokens per image, which for
+ * typical inputs lands well under this. We deliberately err high so the
+ * trimmer never under-counts an image and lets an over-budget request through.
+ */
+const IMAGE_TOKEN_ESTIMATE = 1300;
+
+function estimateTokens(content: MessageContent): number {
+  if (typeof content === "string") {
+    return Math.ceil(content.length / 4);
+  }
+
+  // Array of content blocks: sum text-block lengths normally, charge each
+  // image block a flat estimate.
+  return content.reduce((total, block) => {
+    if (block.type === "text") {
+      return total + Math.ceil(block.text.length / 4);
+    }
+    return total + IMAGE_TOKEN_ESTIMATE;
+  }, 0);
 }
 
 export function trimToTokenLimit(

@@ -67,6 +67,26 @@ Streaming is the single most architecturally invasive feature in this gateway (i
 
 ---
 
+## Multimodal (image input)
+
+Like streaming, multimodal I/O is a generic **transport** concern, not app logic — so it belongs in the gateway contract, not in every app. Putting it here keeps the contract proven and changes the shared files at the source, avoiding the fork-conflict problem of every app widening the message shape independently.
+
+**v1 approach (supported at the contract level):**
+
+- A message's `content` is a union: a plain `string` (unchanged) **or** an array of content blocks (`TextBlock | ImageBlock`). See `MessageContent` in `src/lib/llm-gateway/types.ts`.
+- **Backward compatible:** keeping `string` in the union means every existing text-only call site keeps working with no changes.
+- **Image format = Anthropic's format:** base64 `data` (with the `data:...;base64,` prefix stripped) plus a `media_type`. Choosing this exact shape means the Claude adapter passes `content` straight through with no translation step.
+- `trimToTokenLimit` understands arrays: it sums text-block lengths normally and charges each image a flat estimate (~1,300 tokens — a safe over-estimate; Claude bills roughly `(w × h) / 750`).
+- The mock adapter acknowledges image blocks, so vision flows are testable end-to-end in `NEXT_PUBLIC_MOCK_MODE=true`.
+
+**App responsibility (explicitly out of scope for the boilerplate):**
+
+- The upload UI — file input with `capture` for mobile camera, drag-and-drop, paste-from-clipboard.
+- Client-side downscaling before base64 encoding, to control payload size and vision token cost.
+- Image validation and limits (file type, dimensions, count, total request size). Note that base64 images make request bodies large — see the payload-size note in `src/app/api/llm/chat/route.ts`.
+
+---
+
 ## Fallback chain
 
 When a call fails, the gateway should try to recover automatically rather than failing immediately.
