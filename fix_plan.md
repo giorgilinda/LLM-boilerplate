@@ -26,7 +26,8 @@
 
 <!-- Move items here when done — don't delete them, they're a record -->
 
+- [x] Dependency-free, type-safe i18n layer: `src/lib/i18n/messages.ts` + `locales/en.json` (canonical) + `locales/es.json` (example); `useTranslation()` hook (mount-guarded); `locale`/`setLocale` added to Zustand store; `layout.tsx` `<html lang={DEFAULT_LOCALE}>`; `BaseTemplate` language switcher + `<html lang>` sync effect; README documented.
+
 ---
 
-_Last updated: <!-- date -->_
-_Updated by: <!-- your name or "Claude" -->_
+_Last updated: 2026-06-19_

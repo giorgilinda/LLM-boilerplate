@@ -1,20 +1,33 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import styles from "./BaseTemplate.module.css";
 import { APP_NAME, APP_EMOJI } from "@/utils/constants";
+import { useTranslation } from "@/hooks/useTranslation";
+import { LOCALES, LOCALE_LABELS, type Locale } from "@/lib/i18n/messages";
 
 /**
  * Base layout template that wraps all pages.
  *
  * Provides a consistent structure with:
- * - Responsive header with app branding and navigation
+ * - Responsive header with app branding, navigation, and a language switcher
  * - Main content area
  * - Footer with quick links and contact information
+ *
+ * Doubles as the reference implementation for the i18n layer: it reads labels
+ * via {@link useTranslation} and lets the user change the active locale.
  *
  * Customize navigation links and contact info directly in this component.
  */
 const BaseTemplate = (props: { children: React.ReactNode }) => {
+  const { t, locale, setLocale } = useTranslation();
+
+  // Keep <html lang> in sync with the active (client-only) locale. The server
+  // renders DEFAULT_LOCALE, so this corrects it once the stored value is known.
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
   return (
     <div className={styles.wrapper}>
       <div className={styles.container}>
@@ -27,8 +40,25 @@ const BaseTemplate = (props: { children: React.ReactNode }) => {
                 target="_blank"
                 rel="noreferrer noopener"
               >
-                About me
+                {t("header.aboutMe")}
               </a>
+            </li>
+            <li>
+              <label className={styles.language}>
+                <span className={styles.srOnly}>
+                  {t("header.selectLanguage")}
+                </span>
+                <select
+                  value={locale}
+                  onChange={(e) => setLocale(e.target.value as Locale)}
+                >
+                  {LOCALES.map((code) => (
+                    <option key={code} value={code}>
+                      {LOCALE_LABELS[code]}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </li>
           </ul>
         </header>
@@ -42,7 +72,7 @@ const BaseTemplate = (props: { children: React.ReactNode }) => {
             </div>
             <div>
               <h3 className="font-semibold text-gray-500 mb-[10px]">
-                Quick links
+                {t("footer.quickLinks")}
               </h3>
               <ul>
                 <li>
@@ -51,14 +81,14 @@ const BaseTemplate = (props: { children: React.ReactNode }) => {
                     target="_blank"
                     rel="noreferrer noopener"
                   >
-                    About me
+                    {t("header.aboutMe")}
                   </a>
                 </li>
               </ul>
             </div>
             <div>
               <h3 className="font-semibold text-gray-500 mb-[10px]">
-                Contact
+                {t("footer.contact")}
               </h3>
               <ul>
                 <li>
