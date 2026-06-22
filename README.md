@@ -10,6 +10,7 @@ A modern, production-ready Next.js boilerplate with TypeScript, Jest, ESLint, an
 - **TanStack Query** - Server state with CRUD examples and optimistic updates
 - **Zustand** - Client state with localStorage persistence
 - **i18n** - Dependency-free, type-safe translations with a locale switcher
+- **LLM Gateway** - Server-side provider gateway (Claude) with fallback, retries, budget caps, and a Claude-style chat example with image input
 - **Jest** - Unit and integration testing with coverage
 - **ESLint** - Code quality and consistency
 - **CSS Modules** - Scoped styling
@@ -29,21 +30,27 @@ A modern, production-ready Next.js boilerplate with TypeScript, Jest, ESLint, an
 src/
 ├── app/              # Next.js App Router pages
 │   ├── layout.tsx    # Root layout with metadata
-│   ├── page.tsx      # Home page
+│   ├── page.tsx      # Claude-style chat example (text + image input via useLLM)
 │   ├── not-found.tsx # Custom 404 page
+│   ├── api/llm/chat/ # POST route the chat UI calls (server-side gateway)
 │   └── templates/    # Page templates
 │       ├── BaseTemplate.tsx        # Main layout with header/footer
 │       └── BaseTemplate.module.css # Template styles
 ├── components/       # Reusable React components
 ├── hooks/            # Custom React hooks
 │   ├── useIsMounted.ts   # Hydration-safe mounting hook
+│   ├── useLLM.ts         # Client hook to call /api/llm/chat: { send, response, isLoading, error }
 │   └── useTranslation.ts # i18n hook: { t, locale, setLocale }
 ├── lib/              # Framework-agnostic libraries
-│   └── i18n/         # Dependency-free translation layer
-│       ├── messages.ts        # Types, LOCALES, assembled messages map
-│       └── locales/           # Per-language JSON files (identical key sets)
-│           ├── en.json        # Canonical source of truth for keys
-│           └── es.json         # Example second locale
+│   ├── i18n/         # Dependency-free translation layer
+│   │   ├── messages.ts        # Types, LOCALES, assembled messages map
+│   │   └── locales/           # Per-language JSON files (identical key sets)
+│   │       ├── en.json        # Canonical source of truth for keys
+│   │       └── es.json         # Example second locale
+│   └── llm-gateway/  # Server-side LLM gateway (providers, fallback, budget, trim)
+│       ├── gateway.ts         # Single entry point: fallback chain + retries + budget
+│       ├── types.ts           # Message/response contract (incl. multimodal blocks)
+│       └── providers/         # Claude adapter + mock adapter (NEXT_PUBLIC_MOCK_MODE)
 ├── providers/        # React context providers
 │   └── TanStackProvider.tsx  # TanStack Query provider with devtools
 ├── services/         # API services and reusable CRUD logic
@@ -53,6 +60,7 @@ src/
 │   └── useAppStore.ts        # Global app state with persistence
 ├── utils/            # Utility functions
 │   ├── constants.ts  # App-wide constants (name, description, emoji)
+│   ├── image.ts      # Client-side image downscale + base64 for LLM image input
 │   └── index.ts      # Common utilities (formatDate, capitalize, debounce)
 └── styles/           # Layered global styles and design tokens
     ├── globals.css   # Main global stylesheet imported by app layout
@@ -283,6 +291,70 @@ The locale comes from `localStorage` (client only), so `useTranslation()` is mou
 
 `BaseTemplate` consumes the hook and renders a header language `<select>`, doubling as the reference implementation.
 
+## 🤖 AI / LLM
+
+The boilerplate ships a small **server-side LLM gateway** plus a **Claude-style chat example** (the home page) so a new project can start talking to an LLM — including image input — immediately.
+
+### Architecture
+
+- **`src/lib/llm-gateway/`** (server-only) — the gateway is the single entry point. It walks a configurable **fallback chain** (`llm.config.ts`), **retries** each model with backoff, **trims** history to a token budget, and enforces a daily **budget cap**. It never throws: every call resolves to an `LLMResponse` with `ok: true/false`.
+- **`src/app/api/llm/chat/route.ts`** — the one API route. It keeps the gateway and `ANTHROPIC_API_KEY` entirely server-side.
+- **`src/hooks/useLLM.ts`** — the client hook. It POSTs to `/api/llm/chat` and manages `{ send, response, isLoading, error }`. It is deliberately unaware of providers, mock mode, or fallback — all of that lives in the gateway.
+- **`src/app/page.tsx`** — the Claude-style chat UI built on `useLLM()`. Copy it as the starting point for a new project.
+
+### Configuration
+
+Copy `env.example` to `.env.local`:
+
+```bash
+# Use mock responses while building UI — no API calls, no tokens spent
+NEXT_PUBLIC_MOCK_MODE=true
+
+# Real provider key (server-side only). Get one at https://console.anthropic.com
+ANTHROPIC_API_KEY=
+```
+
+With `NEXT_PUBLIC_MOCK_MODE=true` the gateway returns canned responses (and acknowledges attached images), so the full chat flow — including the loading and image states — is testable offline. The chat page shows a "Mock mode" badge while it's on. Set it to `false` and add your `ANTHROPIC_API_KEY` to hit the real Claude API.
+
+### Sending a message
+
+```tsx
+import { useLLM } from "@/hooks/useLLM";
+
+const { send, isLoading, error } = useLLM();
+
+await send({
+  systemPrompt: "You are a helpful assistant.",
+  messages: [{ role: "user", content: "Hello!" }],
+});
+```
+
+### Image (multimodal) input
+
+A message's `content` can be a plain string **or** an array of text/image blocks. Images use Anthropic's shape: base64 with the `data:...;base64,` prefix stripped, plus a `media_type`. The `prepareImage` helper downscales a `File` client-side and returns a gateway-ready block plus a preview URL:
+
+```tsx
+import { prepareImage, isImageFile } from "@/utils";
+
+const prepared = await prepareImage(file); // file from <input type="file">
+
+await send({
+  systemPrompt: "Describe the image.",
+  messages: [
+    {
+      role: "user",
+      content: [prepared.block, { type: "text", text: "What is this?" }],
+    },
+  ],
+});
+```
+
+The chat example accepts images three ways: the **+** button (file picker), **drag-and-drop** onto the composer, and **paste** (Ctrl/Cmd+V) for screenshots. All three funnel through `prepareImage`.
+
+> CSP note: images are decoded via a `data:` URL (`FileReader`), not a `blob:` object URL, because the project's `Content-Security-Policy` (`next.config.ts`) allows `img-src ... data:` but not `blob:`.
+
+See `src/app/page.tsx` for the complete reference (attachments, previews, retry, reset) and `DESIGN.md` for the gateway's design rationale.
+
 ## 📝 Example Components
 
 The boilerplate includes a few example components to get you started:
@@ -361,6 +433,8 @@ The project can be deployed to any platform that supports Next.js:
 - ✅ TanStack Query with CRUD patterns and optimistic updates
 - ✅ Zustand with localStorage persistence
 - ✅ Dependency-free, type-safe i18n layer with locale switcher
+- ✅ Server-side LLM gateway (Claude) with fallback, retries, and budget caps
+- ✅ Claude-style chat example with image (multimodal) input and mock mode
 - ✅ Jest with React Testing Library
 - ✅ ESLint configuration
 - ✅ CSS Modules with theme system

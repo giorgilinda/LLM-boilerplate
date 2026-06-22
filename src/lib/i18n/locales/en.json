@@ -2,5 +2,20 @@
   "header.aboutMe": "About me",
   "header.selectLanguage": "Select language",
   "footer.quickLinks": "Quick links",
-  "footer.contact": "Contact"
+  "footer.contact": "Contact",
+  "chat.greeting": "How can I help you today?",
+  "chat.subtitle": "Ask anything, or attach an image to get started.",
+  "chat.placeholder": "Send a message…",
+  "chat.send": "Send message",
+  "chat.attachImage": "Attach image",
+  "chat.removeImage": "Remove image",
+  "chat.newChat": "New chat",
+  "chat.thinking": "Thinking…",
+  "chat.you": "You",
+  "chat.assistant": "Assistant",
+  "chat.error": "Something went wrong.",
+  "chat.retry": "Retry",
+  "chat.mockMode": "Mock mode",
+  "chat.imageAlt": "Attached image",
+  "chat.dropHint": "Drop image to attach"
 }

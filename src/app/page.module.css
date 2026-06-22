@@ -1,109 +1,397 @@
-.container {
-  min-height: 100vh;
-  padding: 0 2rem;
+/* Claude-style chat layout.
+   The page fills the available height inside BaseTemplate's <main>, with a
+   scrolling thread and a docked composer. Colors/spacing use the project's
+   semantic tokens so it inherits theming and dark mode for free. */
+
+.page {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  height: calc(100vh - 220px);
+  min-height: 420px;
 }
 
-.main {
-  padding: 5rem 0;
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  min-height: 32px;
+  padding: var(--space-xs) 0;
+}
+
+.badge {
+  margin-right: auto;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-accent-dark);
+  background: var(--color-accent-light);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-round);
+  padding: 2px var(--space-sm);
+}
+
+.newChat {
+  font-size: var(--font-size-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  box-shadow: none;
+  margin: 0;
+  padding: var(--space-xs) var(--space-md);
+  min-height: auto;
+}
+
+.newChat:hover {
+  background: var(--color-background-alt);
+  color: var(--color-text-primary);
+  box-shadow: none;
+  transform: none;
+}
+
+/* ---- Empty / welcome state -------------------------------------------- */
+
+.welcome {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  max-width: 800px;
-  width: 100%;
+  justify-content: center;
+  gap: var(--space-md);
+  text-align: center;
+  padding-bottom: var(--space-2xl);
 }
 
-.title {
+.greeting {
+  font-size: var(--font-size-3xl);
+  font-weight: 600;
   margin: 0;
-  line-height: 1.15;
-  font-size: 4rem;
-  text-align: center;
 }
 
-.highlight {
-  color: var(--color-primary);
+.subtitle {
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-md);
+  font-size: var(--font-size-lg);
 }
 
-.description {
-  text-align: center;
-  line-height: 1.5;
-  font-size: 1.5rem;
-  margin: 2rem 0;
-}
-
-.code {
-  background: var(--color-background-alt);
-  border-radius: var(--radius-sm);
-  padding: 0.2rem 0.5rem;
-  font-size: 1.1rem;
-  font-family: Menlo, Monaco, "Courier New", monospace;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-top: 3rem;
+.welcome .composer {
   width: 100%;
 }
 
-.card {
-  padding: 1.5rem;
-  text-align: left;
-  color: inherit;
-  text-decoration: none;
+/* ---- Conversation thread ---------------------------------------------- */
+
+.thread {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--space-md) var(--space-xs) var(--space-lg);
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  max-width: 100%;
+}
+
+.userMessage {
+  align-items: flex-end;
+}
+
+.assistantMessage {
+  align-items: flex-start;
+}
+
+.role {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bubble {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+}
+
+.userMessage .bubble {
+  background: var(--color-background-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  transition: color 0.15s ease, border-color 0.15s ease;
+  padding: var(--space-sm) var(--space-md);
+  max-width: 85%;
 }
 
-.card:hover,
-.card:focus,
-.card:active {
-  color: var(--color-primary);
-  border-color: var(--color-primary);
+.assistantMessage .bubble {
+  padding: 0 var(--space-xs);
 }
 
-.card h2 {
-  margin: 0 0 1rem 0;
-  font-size: 1.5rem;
-}
-
-.card p {
-  margin: 0;
-  font-size: 1.25rem;
-  line-height: 1.5;
-}
-
-.footer {
-  width: 100%;
-  height: 100px;
-  border-top: 1px solid var(--color-border);
+.messageImages {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
 }
 
-.footer p {
-  color: var(--color-text-secondary);
+.messageImage {
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
 }
+
+/* ---- "Thinking" indicator --------------------------------------------- */
+
+.thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: var(--space-sm) var(--space-xs);
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-round);
+  background: var(--color-text-tertiary);
+  animation: blink 1.4s infinite both;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.2;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+/* ---- Error banner ------------------------------------------------------ */
+
+.errorBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-error);
+  background: var(--color-error-light);
+  color: var(--color-error-dark);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.retry {
+  flex-shrink: 0;
+  margin: 0;
+  padding: var(--space-xs) var(--space-md);
+  min-height: auto;
+  background: var(--color-error);
+  box-shadow: none;
+}
+
+.retry:hover {
+  background: var(--color-error-dark);
+  box-shadow: none;
+  transform: none;
+}
+
+/* ---- Composer ---------------------------------------------------------- */
+
+.composerDock {
+  padding: var(--space-sm) var(--space-xs) var(--space-md);
+}
+
+.composer {
+  position: relative;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-sm);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.composer:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.dragging {
+  border-color: var(--color-primary);
+  border-style: dashed;
+  background: var(--color-background-alt);
+}
+
+/* Overlay shown while dragging a file over the composer. pointer-events:none
+   keeps drag events flowing to the composer so dragleave/drop fire correctly. */
+.dropHint {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  border-radius: var(--radius-xl);
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.attachments {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin: 0 0 var(--space-sm);
+  padding: 0 var(--space-xs);
+}
+
+.thumb {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.thumbRemove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-round);
+  background: var(--color-text-primary);
+  color: var(--color-text-inverse);
+  font-size: 16px;
+  line-height: 1;
+  box-shadow: var(--shadow-sm);
+}
+
+.thumbRemove:hover {
+  background: var(--color-text-primary);
+  transform: none;
+  box-shadow: var(--shadow-md);
+}
+
+.inputRow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-sm);
+}
+
+.textarea {
+  flex: 1;
+  resize: none;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: var(--space-sm);
+  max-height: 200px;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+}
+
+.textarea:focus {
+  border: none;
+  outline: none;
+}
+
+.iconButton,
+.sendButton {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  margin: 0;
+  border-radius: var(--radius-round);
+  box-shadow: none;
+}
+
+.iconButton {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.iconButton:hover {
+  background: var(--color-background-alt);
+  color: var(--color-text-primary);
+  box-shadow: none;
+  transform: none;
+}
+
+.sendButton {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.sendButton:hover:not(:disabled) {
+  box-shadow: var(--shadow-md);
+}
+
+/* ---- Mobile ------------------------------------------------------------ */
 
 @media (max-width: 600px) {
-  .grid {
-    width: 100%;
-    flex-direction: column;
+  .page {
+    height: auto;
+    flex: 1;
   }
 
-  .title {
-    font-size: 2.5rem;
+  .greeting {
+    font-size: var(--font-size-2xl);
   }
 
-  .description {
-    font-size: 1.2rem;
+  .messageImage {
+    width: 120px;
+    height: 120px;
   }
 }

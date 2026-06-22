@@ -4,6 +4,12 @@
  * Example utility functions for your project
  */
 
+export {
+  prepareImage,
+  isImageFile,
+  type PreparedImage,
+} from "./image";
+
 /**
  * Format a date to a readable string (e.g. "January 1, 2025").
  *
