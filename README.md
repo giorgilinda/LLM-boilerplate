@@ -33,6 +33,7 @@ src/
 │   ├── page.tsx      # Claude-style chat example (text + image input via useLLM)
 │   ├── not-found.tsx # Custom 404 page
 │   ├── api/llm/chat/ # POST route the chat UI calls (server-side gateway)
+│   ├── api/feedback/ # POST route storing thumbs up/down on responses (JSON log)
 │   └── templates/    # Page templates
 │       ├── BaseTemplate.tsx        # Main layout with header/footer
 │       └── BaseTemplate.module.css # Template styles
@@ -300,7 +301,8 @@ The boilerplate ships a small **server-side LLM gateway** plus a **Claude-style 
 - **`src/lib/llm-gateway/`** (server-only) — the gateway is the single entry point. It walks a configurable **fallback chain** (`llm.config.ts`), **retries** each model with backoff, **trims** history to a token budget, and enforces a daily **budget cap**. It never throws: every call resolves to an `LLMResponse` with `ok: true/false`.
 - **`src/app/api/llm/chat/route.ts`** — the one API route. It keeps the gateway and `ANTHROPIC_API_KEY` entirely server-side.
 - **`src/hooks/useLLM.ts`** — the client hook. It POSTs to `/api/llm/chat` and manages `{ send, response, isLoading, error }`. It is deliberately unaware of providers, mock mode, or fallback — all of that lives in the gateway.
-- **`src/app/page.tsx`** — the Claude-style chat UI built on `useLLM()`. Copy it as the starting point for a new project.
+- **`src/app/page.tsx`** — the Claude-style chat UI built on `useLLM()`. Copy it as the starting point for a new project. Each assistant reply has a **copy** button, **thumbs up/down** feedback, and a **regenerate** button. Rating a response opens a Claude-style dialog for optional details (and, on thumbs-down, an optional issue category).
+- **`src/app/api/feedback/route.ts`** — records feedback (`rating`, optional `category` + free-text `details`, and a snapshot of the response) to an append-only JSON log at `data/feedback.json` (gitignored). This is intentionally simple for a boilerplate; it requires a persistent filesystem, so on serverless platforms (e.g. Vercel) swap the file write for a database insert — the route contract stays the same.
 
 ### Configuration
 
