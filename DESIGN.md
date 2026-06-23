@@ -164,26 +164,37 @@ A firm boundary, deliberately narrow:
 
 Some apps benefit from a **cheap, fast model call before the main response** — to infer metadata from the user's latest message (intent, language, mood, subject, etc.) and build a dynamic system prompt from it.
 
-This is **app-level logic**, not part of the gateway. The boilerplate ships a generic **example** at `src/lib/chat/classifier.example.ts` (same pattern as `gemini.example.ts`: reference only, not wired in by default).
+This is **app-level logic**, not part of the main LLM gateway. The boilerplate ships an **opt-in classifier module** (`src/lib/classifier/`) plus an **example wrapper** at `src/lib/chat/message-metadata.example.ts`. Same pattern as `gemini.example.ts`: reference only.
 
-**Typical flow:**
+**Nothing runs unless you wire it in.** Importing the classifier module does not start anything. The default `/api/llm/chat` route and the chat UI never call it. Classification only happens when *your* API route (or server action) explicitly calls `classify()` or a wrapper like `classifyMessageMetadata()`.
+
+**Typical flow (when you opt in):**
 
 ```
 User message
-    → classifyMessage()     // cheap model (e.g. Haiku), server-side only
-    → buildSystemPrompt()   // app-owned; uses metadata + profile/state
-    → llmGateway.chat()     // main call via /api/llm/chat
+    → classify() or your wrapper   // cheap model (e.g. Haiku), server-side only
+    → buildSystemPrompt()        // app-owned; uses metadata + profile/state
+    → llmGateway.chat()          // main call via /api/llm/chat
 ```
+
+**`classify<T>()` behavior** (see `src/lib/classifier/gateway.ts`):
+
+1. `NEXT_PUBLIC_MOCK_MODE === "true"` → return `defaultValue` immediately (no API call).
+2. Provider not configured (missing API key) → return `defaultValue`.
+3. Otherwise → call the configured provider, parse JSON, validate with your type guard.
+4. Any API, parse, or validation failure → return `defaultValue` (non-fatal).
+
+Provider and model live in `classifier.config.ts` (committed). Override the model via `CLASSIFIER_MODEL` in `.env.local`.
 
 **Design rules:**
 
+- **Opt-in only.** Do not add classification to the default chat route. Apps that need it call `classify()` from their own route before `llmGateway.chat()`.
 - **Classifier failures are non-fatal.** Always fall back to sensible defaults and still run the main call. Never block the user because classification failed.
 - **Keep the classifier cheap.** Use a small model, low `max_tokens`, and a tight JSON output schema. This runs on every message — cost adds up quickly.
 - **Metadata shape is app-specific.** A homework tutor might track subject and mood; a support bot might track intent and urgency. Define types in your app, not in the boilerplate.
 - **Run server-side only.** Classification needs API keys and belongs in the API route (or a server action), never in a client component.
-- **Don't add a gateway hook until you need it.** For v1, call the classifier directly in your route before `llmGateway.chat()`. A generic `beforeChat` middleware in the gateway is only worth it once a second project repeats the same pattern.
 
-See the homework-helper project for a real-world implementation (`classifyMessage` + session reading + dynamic prompt builder).
+See the homework-helper project for a real-world implementation (`classifyMessage` + session reading + dynamic prompt builder). For a step-by-step wiring guide, see `HOW_TO_USE.md` → "Optional — Pre-flight classification".
 
 ---
 

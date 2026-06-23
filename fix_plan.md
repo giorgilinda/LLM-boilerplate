@@ -41,7 +41,7 @@
 
 - [x] Chat feature tests: extended `tests/app/page.test.tsx` (+5: copy, feedback submit/cancel/clear, regenerate). Added `tests/app/feedback-route.test.ts` (8 route tests). Test infra: plain-object fetch mock; `@jest-environment node` on feedback-route; `jest.polyfills.js` placeholder. `npm test --testPathPattern='page.test|feedback-route|messages.test'`: 26 passed.
 
-- [x] Pre-flight classification docs + example: DESIGN.md section (two-call pattern, non-fatal failures, app-owned metadata). `src/lib/chat/classifier.example.ts` (generic stub, not wired in). README updated.
+- [x] Pre-flight classifier module (opt-in): `src/lib/classifier/` (`classify<T>()`, parse, Anthropic adapter, `gemini.example.ts`), `classifier.config.ts`, `message-metadata.example.ts`. Mock-mode skip; not wired into default `/api/llm/chat`. Replaced `classifier.example.ts`. Tests: `tests/lib/classifier/` (10). DESIGN.md + README + env.example + HOW_TO_USE.md updated.
 
 ---
 

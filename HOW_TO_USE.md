@@ -427,6 +427,91 @@ export function ProviderSwitchExample() {
 
 ---
 
+## Optional — Pre-flight classification
+
+Some apps run a **cheap, fast model call before the main response** — to infer metadata from the user's latest message (intent, language, mood, subject, etc.) and build a dynamic system prompt from it. The boilerplate ships an opt-in classifier module for this pattern.
+
+**Nothing runs unless you wire it in.** The default `/api/llm/chat` route and the chat UI never import the classifier. Importing `src/lib/classifier/` does not start anything — classification only happens when *your* API route (or server action) explicitly calls `classify()` or a wrapper like `classifyMessageMetadata()`.
+
+See `DESIGN.md` → "Pre-flight classification" for the design rationale. This section is the how-to.
+
+### When to use it
+
+- You need metadata from the user's message to shape the system prompt (tutor subject/mood, support intent/urgency, etc.)
+- You're okay paying for an extra small-model call on every message
+- You can tolerate the classifier returning defaults when it fails — the main call should always proceed
+
+### Setup
+
+**1. Configure the classifier model** (optional — defaults to Haiku):
+
+```bash
+# .env.local
+CLASSIFIER_MODEL=claude-haiku-4-5-20251001
+ANTHROPIC_API_KEY=sk-...   # same key as the main gateway
+```
+
+Provider and model live in `classifier.config.ts` (committed). The classifier uses its own config file, separate from `llm.config.ts`, so you can keep classification cheap even when the main chain uses Sonnet.
+
+**2. Define your metadata shape**
+
+Copy `src/lib/chat/message-metadata.example.ts` to your project (drop the `.example`) and replace `MessageMetadata` with your app's shape — or write your own wrapper around `classify()`. The example file shows a minimal `{ intent, language }` schema and a type guard.
+
+**3. Call it from your API route before `llmGateway.chat()`**
+
+The boilerplate's default chat route does **not** do this. You add it in *your* route when you need it:
+
+```ts
+// src/app/api/my-chat/route.ts  ← YOUR route, not the boilerplate default
+
+import { NextRequest, NextResponse } from "next/server";
+import { llmGateway } from "@/lib/llm-gateway/gateway";
+import {
+  classifyMessageMetadata,
+  buildSystemPromptFromMetadata,
+} from "@/lib/chat/message-metadata"; // your copy of message-metadata.example.ts
+
+export async function POST(request: NextRequest) {
+  const { messages } = await request.json();
+
+  const lastUser = [...messages].reverse().find((m) => m.role === "user");
+  const userText =
+    typeof lastUser?.content === "string" ? lastUser.content : "";
+
+  // Cheap pre-flight call — returns defaults in mock mode or on any failure
+  const metadata = await classifyMessageMetadata(userText);
+  const systemPrompt = buildSystemPromptFromMetadata(
+    "You are a helpful assistant.",
+    metadata,
+  );
+
+  const response = await llmGateway.chat({ systemPrompt, messages });
+  return NextResponse.json(response);
+}
+```
+
+Or call `classify()` directly with your own types and validator — see `src/lib/classifier/gateway.ts`.
+
+### Behavior you can rely on
+
+`classify<T>()` always resolves to a value; it never throws:
+
+1. `NEXT_PUBLIC_MOCK_MODE === "true"` → returns your `defaultValue` immediately (no API call)
+2. Provider not configured (missing API key) → returns `defaultValue`
+3. API error, bad JSON, or failed validation → returns `defaultValue`
+
+So the main `llmGateway.chat()` call should always run afterward, using defaults when classification didn't produce real metadata.
+
+### Adding a second classifier provider
+
+Same pattern as Step 8 for the LLM gateway:
+
+1. Add the provider to `ClassifierProviderName` in `classifier.config.ts`
+2. Copy `src/lib/classifier/providers/gemini.example.ts` to `gemini.ts` and implement it
+3. Add a case in `getClassifierAdapter()` in `src/lib/classifier/gateway.ts`
+
+---
+
 ## Quick reference — where things live
 
 | What you want to do | Where to look |
@@ -441,6 +526,8 @@ export function ProviderSwitchExample() {
 | Let the user pick a provider/model themselves | Build a select component, pass their choice as a per-call `fallbackChain` override (Step 9b) |
 | See which provider/model actually answered a call | `response.servedBy` |
 | Debug why a call failed | Check `result.error.code` and `result.error.message` — never throws, always in the response |
+| Run a cheap classifier before the main call (opt-in) | `src/lib/classifier/gateway.ts` `classify()` — see Optional section above; example wrapper at `message-metadata.example.ts` |
+| Change which model the classifier uses | `classifier.config.ts` + `CLASSIFIER_MODEL` in `.env.local` |
 
 ---
 
@@ -450,3 +537,5 @@ export function ProviderSwitchExample() {
 - ❌ Don't import `src/lib/llm-gateway/providers/claude.ts` or `gateway.ts` from client components — they're server-only and `claude.ts` reads your API key
 - ❌ Don't put product-specific prompt logic inside `src/lib/llm-gateway/` — that folder stays generic so it can sync with future boilerplate updates (see `DESIGN.md`)
 - ❌ Don't set `NEXT_PUBLIC_MOCK_MODE=false` while doing UI/layout work — switch back to mock mode for anything that isn't specifically testing response quality
+- ❌ Don't wire the classifier into the default `/api/llm/chat` route unless you explicitly want classification on every chat message — it's opt-in; call `classify()` only from routes you own
+- ❌ Don't import `src/lib/classifier/` from client components — it's server-only and reads API keys

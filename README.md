@@ -56,7 +56,11 @@ src/
 │   │   ├── messages.ts        # createId, toLLMMessages
 │   │   ├── constants.ts       # DEFAULT_SYSTEM_PROMPT, IS_MOCK_MODE
 │   │   ├── feedback.ts        # NEGATIVE_FEEDBACK_CATEGORIES
-│   │   └── classifier.example.ts # Pre-flight classification pattern (not wired in)
+│   │   └── message-metadata.example.ts # Opt-in classifier wrapper (not wired in)
+│   ├── classifier/   # Opt-in pre-flight classifier (server-only; not used by default chat)
+│   │   ├── gateway.ts         # classify<T>() entry point
+│   │   ├── parse.ts           # parseJsonFromModelText()
+│   │   └── providers/         # Anthropic adapter + gemini.example.ts
 │   ├── i18n/         # Dependency-free translation layer
 │   │   ├── messages.ts        # Types, LOCALES, assembled messages map
 │   │   └── locales/           # Per-language JSON files (identical key sets)
@@ -86,6 +90,7 @@ src/
 └── rules/            # Auto-applied behavior rules for the AI agent
 tests/                # Test files
 public/               # Static assets
+classifier.config.ts  # Pre-flight classifier provider + model (opt-in; see DESIGN.md)
 ```
 
 ## 🛠️ Getting Started
@@ -374,6 +379,16 @@ The chat example accepts images three ways: the **+** button (file picker), **dr
 
 See `src/components/Chat/Chat.tsx` for the complete reference (attachments, previews, retry, reset, feedback, regenerate) and `DESIGN.md` for the gateway's design rationale.
 
+### Pre-flight classification (opt-in)
+
+Some apps run a **cheap classifier call before the main response** to infer metadata (intent, language, mood, etc.) and build a dynamic system prompt. This is **not enabled by default** — the classifier does nothing until you explicitly call it from your own API route.
+
+- **`src/lib/classifier/`** — provider-agnostic `classify<T>()` gateway (mirrors the LLM gateway pattern). Respects `NEXT_PUBLIC_MOCK_MODE` (returns your default immediately, no API call).
+- **`classifier.config.ts`** — committed provider + model config. Override model via `CLASSIFIER_MODEL` in `.env.local`.
+- **`src/lib/chat/message-metadata.example.ts`** — example wrapper showing how to define your metadata shape and call `classify()` before `llmGateway.chat()`.
+
+The default `/api/llm/chat` route and chat UI **never import** the classifier. See `DESIGN.md` → "Pre-flight classification" for the design rationale and `HOW_TO_USE.md` → "Optional — Pre-flight classification" for a step-by-step wiring guide.
+
 ## 📝 Example Components
 
 The boilerplate includes a few example components to get you started:
@@ -387,10 +402,13 @@ These serve as examples of best practices for component structure and CSS Module
 
 Tests are located in the `tests/` directory. Example tests are included for:
 
-- Utility functions (`tests/utils.test.ts`) – formatDate, capitalize, debounce
+- Utility functions (`tests/utils.test.ts`, `tests/utils/image.test.ts`) – formatDate, capitalize, debounce, image downscale/encode
 - Components (`tests/components/Button.test.tsx`, `tests/components/Card.test.tsx`)
 - CRUD logic (`tests/services/CRUDLogic.test.ts`) - URL building, request contracts, composite-key helpers
 - CRUD service (`tests/services/CRUDService.test.tsx`) - query keys, optimistic updates, list/metadata handling
+- Chat UI (`tests/app/page.test.tsx`) – send, attachments, copy, feedback, regenerate
+- Feedback API (`tests/app/feedback-route.test.ts`) – append-only JSON log validation
+- Classifier (`tests/lib/classifier/`) – mock-mode skip, parse, non-fatal fallbacks
 
 CI runs on push/PR to `main` or `master` (`.github/workflows/ci.yml`): install, lint, test, build.
 
