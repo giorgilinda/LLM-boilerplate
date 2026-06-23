@@ -30,7 +30,7 @@ A modern, production-ready Next.js boilerplate with TypeScript, Jest, ESLint, an
 src/
 ├── app/              # Next.js App Router pages
 │   ├── layout.tsx    # Root layout with metadata
-│   ├── page.tsx      # Claude-style chat example (text + image input via useLLM)
+│   ├── page.tsx      # Thin home route — renders <Chat />
 │   ├── not-found.tsx # Custom 404 page
 │   ├── api/llm/chat/ # POST route the chat UI calls (server-side gateway)
 │   ├── api/feedback/ # POST route storing thumbs up/down on responses (JSON log)
@@ -38,11 +38,24 @@ src/
 │       ├── BaseTemplate.tsx        # Main layout with header/footer
 │       └── BaseTemplate.module.css # Template styles
 ├── components/       # Reusable React components
+│   ├── Chat/         # Composition root: thread + composer + feedback dialog
+│   ├── Composer/     # Message input (textarea, attach, send, drag-and-drop)
+│   ├── Message/      # Single rendered message + per-response actions
+│   ├── MessageThread/# Conversation list, loading/error states, docked composer
+│   └── FeedbackDialog/ # Optional detail modal for thumbs up/down
 ├── hooks/            # Custom React hooks
 │   ├── useIsMounted.ts   # Hydration-safe mounting hook
 │   ├── useLLM.ts         # Client hook to call /api/llm/chat: { send, response, isLoading, error }
+│   ├── useAttachments.ts # Staging images from picker / paste / drop
+│   ├── useChatSession.ts # Message history + send / retry / regenerate / new-chat
+│   ├── useFeedback.ts    # Thumbs up/down + optional detail dialog
 │   └── useTranslation.ts # i18n hook: { t, locale, setLocale }
 ├── lib/              # Framework-agnostic libraries
+│   ├── chat/         # Chat UI types, wire-format helpers, feedback categories
+│   │   ├── types.ts           # ChatMessage, Feedback
+│   │   ├── messages.ts        # createId, toLLMMessages
+│   │   ├── constants.ts       # DEFAULT_SYSTEM_PROMPT, IS_MOCK_MODE
+│   │   └── feedback.ts        # NEGATIVE_FEEDBACK_CATEGORIES
 │   ├── i18n/         # Dependency-free translation layer
 │   │   ├── messages.ts        # Types, LOCALES, assembled messages map
 │   │   └── locales/           # Per-language JSON files (identical key sets)
@@ -301,7 +314,10 @@ The boilerplate ships a small **server-side LLM gateway** plus a **Claude-style 
 - **`src/lib/llm-gateway/`** (server-only) — the gateway is the single entry point. It walks a configurable **fallback chain** (`llm.config.ts`), **retries** each model with backoff, **trims** history to a token budget, and enforces a daily **budget cap**. It never throws: every call resolves to an `LLMResponse` with `ok: true/false`.
 - **`src/app/api/llm/chat/route.ts`** — the one API route. It keeps the gateway and `ANTHROPIC_API_KEY` entirely server-side.
 - **`src/hooks/useLLM.ts`** — the client hook. It POSTs to `/api/llm/chat` and manages `{ send, response, isLoading, error }`. It is deliberately unaware of providers, mock mode, or fallback — all of that lives in the gateway.
-- **`src/app/page.tsx`** — the Claude-style chat UI built on `useLLM()`. Copy it as the starting point for a new project. Each assistant reply has a **copy** button, **thumbs up/down** feedback, and a **regenerate** button. Rating a response opens a Claude-style dialog for optional details (and, on thumbs-down, an optional issue category).
+- **`src/components/Chat/Chat.tsx`** — the Claude-style chat UI built on `useLLM()`. Copy it as the starting point for a new project. Each assistant reply has a **copy** button, **thumbs up/down** feedback, and a **regenerate** button. Rating a response opens a Claude-style dialog for optional details (and, on thumbs-down, an optional issue category). `src/app/page.tsx` is a thin route that renders `<Chat />`.
+- **`src/hooks/useChatSession.ts`** — owns message history and send / retry / regenerate / new-chat orchestration.
+- **`src/hooks/useAttachments.ts`** — owns image staging (file picker, paste, drag-and-drop).
+- **`src/hooks/useFeedback.ts`** — owns thumbs up/down state and the optional detail dialog.
 - **`src/app/api/feedback/route.ts`** — records feedback (`rating`, optional `category` + free-text `details`, and a snapshot of the response) to an append-only JSON log at `data/feedback.json` (gitignored). This is intentionally simple for a boilerplate; it requires a persistent filesystem, so on serverless platforms (e.g. Vercel) swap the file write for a database insert — the route contract stays the same.
 
 ### Configuration
@@ -355,7 +371,7 @@ The chat example accepts images three ways: the **+** button (file picker), **dr
 
 > CSP note: images are decoded via a `data:` URL (`FileReader`), not a `blob:` object URL, because the project's `Content-Security-Policy` (`next.config.ts`) allows `img-src ... data:` but not `blob:`.
 
-See `src/app/page.tsx` for the complete reference (attachments, previews, retry, reset) and `DESIGN.md` for the gateway's design rationale.
+See `src/components/Chat/Chat.tsx` for the complete reference (attachments, previews, retry, reset, feedback, regenerate) and `DESIGN.md` for the gateway's design rationale.
 
 ## 📝 Example Components
 

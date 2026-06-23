@@ -1,5 +1,5 @@
 /* Claude-style chat layout.
-   The page fills the available height inside BaseTemplate's <main>, with a
+   The chat fills the available height inside BaseTemplate's <main>, with a
    scrolling thread and a docked composer. Colors/spacing use the project's
    semantic tokens so it inherits theming and dark mode for free. */
 

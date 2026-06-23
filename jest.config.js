@@ -9,7 +9,9 @@ module.exports = {
   // Jest cannot load @playwright/test, so exclude that directory here.
   testPathIgnorePatterns: ["/node_modules/", "/tests/e2e/"],
   moduleNameMapper: {
-    "^@/(.*)$": "<rootDir>/src/$1",
+    // CSS must be mapped before the @/ alias, otherwise @/…/*.module.css
+    // resolves to the real file and Jest chokes on the syntax.
     "\\.(css|less|scss|sass)$": "identity-obj-proxy",
+    "^@/(.*)$": "<rootDir>/src/$1",
   },
 };
