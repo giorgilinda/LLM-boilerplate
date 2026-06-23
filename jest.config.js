@@ -4,6 +4,7 @@ module.exports = {
   },
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   testEnvironment: "jsdom",
+  setupFiles: ["<rootDir>/jest.polyfills.js"],
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   // Playwright specs live in tests/e2e and must be run by Playwright, not Jest.
   // Jest cannot load @playwright/test, so exclude that directory here.

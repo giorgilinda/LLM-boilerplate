@@ -160,6 +160,33 @@ A firm boundary, deliberately narrow:
 
 ---
 
+## Pre-flight classification
+
+Some apps benefit from a **cheap, fast model call before the main response** — to infer metadata from the user's latest message (intent, language, mood, subject, etc.) and build a dynamic system prompt from it.
+
+This is **app-level logic**, not part of the gateway. The boilerplate ships a generic **example** at `src/lib/chat/classifier.example.ts` (same pattern as `gemini.example.ts`: reference only, not wired in by default).
+
+**Typical flow:**
+
+```
+User message
+    → classifyMessage()     // cheap model (e.g. Haiku), server-side only
+    → buildSystemPrompt()   // app-owned; uses metadata + profile/state
+    → llmGateway.chat()     // main call via /api/llm/chat
+```
+
+**Design rules:**
+
+- **Classifier failures are non-fatal.** Always fall back to sensible defaults and still run the main call. Never block the user because classification failed.
+- **Keep the classifier cheap.** Use a small model, low `max_tokens`, and a tight JSON output schema. This runs on every message — cost adds up quickly.
+- **Metadata shape is app-specific.** A homework tutor might track subject and mood; a support bot might track intent and urgency. Define types in your app, not in the boilerplate.
+- **Run server-side only.** Classification needs API keys and belongs in the API route (or a server action), never in a client component.
+- **Don't add a gateway hook until you need it.** For v1, call the classifier directly in your route before `llmGateway.chat()`. A generic `beforeChat` middleware in the gateway is only worth it once a second project repeats the same pattern.
+
+See the homework-helper project for a real-world implementation (`classifyMessage` + session reading + dynamic prompt builder).
+
+---
+
 ## Client/server architecture
 
 **The gateway is server-only.** It is only ever imported inside Next.js API routes (`src/app/api/.../route.ts`). It never runs in the browser, and API keys never reach the client.

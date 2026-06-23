@@ -9,7 +9,8 @@ import type { LLMResponse } from "@/lib/llm-gateway/types";
  *
  * The LLM hook and the (browser-only) image helper are mocked so the tests
  * focus on the page's behavior: building the gateway request, rendering the
- * conversation, image attachments, and the error/retry + reset flows.
+ * conversation, image attachments, error/retry + reset, and per-response
+ * actions (copy, feedback, regenerate).
  */
 
 const mockSend = jest.fn<Promise<LLMResponse>, [unknown]>();
@@ -40,12 +41,26 @@ function typeMessage(value: string): void {
   fireEvent.change(textarea, { target: { value } });
 }
 
+/** Send a user message and wait for the assistant reply to appear. */
+async function sendMessage(
+  userText: string,
+  assistantReply: string,
+): Promise<void> {
+  typeMessage(userText);
+  fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+  await screen.findByText(assistantReply);
+}
+
 beforeEach(() => {
   mockSend.mockReset();
   mockState.isLoading = false;
   mockState.error = null;
   mockIsImageFile.mockReturnValue(true);
   mockPrepareImage.mockReset();
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ ok: true }),
+  }) as jest.Mock;
 });
 
 describe("chat page", () => {
@@ -217,5 +232,119 @@ describe("chat page", () => {
     expect(
       screen.getByText("How can I help you today?")
     ).toBeInTheDocument();
+  });
+
+  it("copies an assistant reply to the clipboard", async () => {
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+
+    mockSend.mockResolvedValue({ ok: true, message: "Copy me" });
+    render(<Home />);
+    await sendMessage("Hello", "Copy me");
+
+    const copyButton = screen.getByRole("button", { name: "Copy" });
+    fireEvent.click(copyButton);
+
+    expect(writeText).toHaveBeenCalledWith("Copy me");
+    await waitFor(() =>
+      expect(copyButton).toHaveAttribute("title", "Copied"),
+    );
+  });
+
+  it("opens the feedback dialog and posts on submit", async () => {
+    mockSend.mockResolvedValue({ ok: true, message: "Rate me" });
+    render(<Home />);
+    await sendMessage("Hello", "Rate me");
+
+    fireEvent.click(screen.getByRole("button", { name: "Good response" }));
+
+    expect(
+      screen.getByRole("dialog", { name: "Give positive feedback" }),
+    ).toBeInTheDocument();
+
+    fireEvent.change(
+      screen.getByPlaceholderText("What did you like about this response?"),
+      { target: { value: "Clear and concise" } },
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+    const [, init] = (global.fetch as jest.Mock).mock.calls.at(-1)!;
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      messageId: expect.any(String),
+      rating: "up",
+      category: null,
+      details: "Clear and concise",
+      text: "Rate me",
+    });
+
+    expect(
+      screen.queryByRole("dialog", { name: "Give positive feedback" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("posts rating without details when feedback dialog is cancelled", async () => {
+    mockSend.mockResolvedValue({ ok: true, message: "Rate me" });
+    render(<Home />);
+    await sendMessage("Hello", "Rate me");
+
+    fireEvent.click(screen.getByRole("button", { name: "Bad response" }));
+    expect(
+      screen.getByRole("dialog", { name: "Give negative feedback" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+    const [, init] = (global.fetch as jest.Mock).mock.calls.at(-1)!;
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      messageId: expect.any(String),
+      rating: "down",
+      text: "Rate me",
+    });
+  });
+
+  it("posts null rating when clearing an active thumb", async () => {
+    mockSend.mockResolvedValue({ ok: true, message: "Rate me" });
+    render(<Home />);
+    await sendMessage("Hello", "Rate me");
+
+    fireEvent.click(screen.getByRole("button", { name: "Good response" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    (global.fetch as jest.Mock).mockClear();
+
+    fireEvent.click(screen.getByRole("button", { name: "Good response" }));
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+    const [, init] = (global.fetch as jest.Mock).mock.calls.at(-1)!;
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      messageId: expect.any(String),
+      rating: null,
+      text: "Rate me",
+    });
+  });
+
+  it("regenerates an assistant reply from sliced history", async () => {
+    mockSend
+      .mockResolvedValueOnce({ ok: true, message: "First reply" })
+      .mockResolvedValueOnce({ ok: true, message: "Second reply" });
+
+    render(<Home />);
+    await sendMessage("Hello", "First reply");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Regenerate response" }),
+    );
+
+    await waitFor(() => expect(mockSend).toHaveBeenCalledTimes(2));
+    expect(mockSend.mock.calls[1][0]).toEqual({
+      systemPrompt: expect.any(String),
+      messages: [{ role: "user", content: "Hello" }],
+    });
+    expect(await screen.findByText("Second reply")).toBeInTheDocument();
+    expect(screen.queryByText("First reply")).not.toBeInTheDocument();
   });
 });

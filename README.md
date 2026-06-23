@@ -55,7 +55,8 @@ src/
 │   │   ├── types.ts           # ChatMessage, Feedback
 │   │   ├── messages.ts        # createId, toLLMMessages
 │   │   ├── constants.ts       # DEFAULT_SYSTEM_PROMPT, IS_MOCK_MODE
-│   │   └── feedback.ts        # NEGATIVE_FEEDBACK_CATEGORIES
+│   │   ├── feedback.ts        # NEGATIVE_FEEDBACK_CATEGORIES
+│   │   └── classifier.example.ts # Pre-flight classification pattern (not wired in)
 │   ├── i18n/         # Dependency-free translation layer
 │   │   ├── messages.ts        # Types, LOCALES, assembled messages map
 │   │   └── locales/           # Per-language JSON files (identical key sets)
